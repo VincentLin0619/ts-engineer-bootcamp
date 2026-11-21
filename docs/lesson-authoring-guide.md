@@ -110,7 +110,9 @@ type Todo = {
 ```
 
 - Day 02：定義上述型別，建立幾筆 `Todo` 資料與 `Todo[]`。
-- Day 03：`formatTodo(todo: Todo): string`、`priorityLabel(priority: Priority): string`、`countDone(todos: Todo[]): number`（用迴圈）。
+- Day 03：`formatTodo(todo: Todo): string`、`priorityLabel(priority: Priority): string`、`countDone(todos: Todo[]): number`（用迴圈）。Day 04 起 `countDone` 的參數改為 `readonly Todo[]`。
+- `priorityLabel` 把 `"low"`／`"medium"`／`"high"` 對應到 `"低"`／`"中"`／`"高"`。
+- 一筆待辦事項印成一行純文字時，全課程固定用 `formatTodo` 的格式：`[x] #2 寫作業（優先度：中）`、`[ ] #1 買牛奶（優先度：高）`。之後每一天的 CLI 與 `PlainTextFormatter` 都沿用這個格式。
 - Day 04：用陣列方法改寫與擴充，例如篩選未完成、取出標題、統計；`toggleDone(todo: Todo): Todo` 回傳新物件，不修改原物件。
 
 ### Day 05：函式版 CRUD（單一檔案，資料放在記憶體）
@@ -311,22 +313,22 @@ type Result<TValue, TError> =
 
 寫第 N 天時，只能假設學員會第 1 到 N−1 天的內容。
 
-| Day | 教完之後學員會的東西                                                                                                                           |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 01  | `console.log`、`const`／`let`、`string`／`number`／`boolean`、樣板字串、`typeof`、`Number()`／`String()`、讀型別錯誤                           |
-| 02  | 物件型別、陣列型別與索引、`type`、`interface`、選用屬性、union、literal type、`undefined`／`null`、最基本的 `if` 型別縮小                      |
-| 03  | `if`／`else`、比較與邏輯運算、三元運算、`switch`、`for`／`for...of`／`while`、函式宣告與箭頭函式、參數與回傳型別、預設參數、作用域、call stack |
-| 04  | `map`／`filter`／`find`／`some`／`every`／`reduce`、展開與解構、值與參考、不可變更新、`readonly`                                               |
-| 05  | CRUD 的定義、用函式操作記憶體中的陣列、產生 `id`、`prompt()` 互動                                                                              |
-| 06  | `export`／`import`／`import type`、檔案拆分、`throw`、`try`／`catch`、`unknown` 的錯誤物件、`bun:test`                                         |
-| 07  | strict 各選項、命名規範、`any` 與 `unknown`、`as const`、Biome、`bun fmt`                                                                      |
-| 08  | `class`、建構子、屬性與方法、`this`、`#` 私有成員、getter、`static`                                                                            |
-| 09  | `interface` 作為合約、`implements`、`abstract`、多型                                                                                           |
-| 10  | `extends`、`super`、繼承與組合的取捨、分層架構、相依注入、自訂錯誤類別                                                                         |
-| 11  | 同步與非同步、Promise、`async`／`await`、event loop、`Promise.all`、檔案讀寫                                                                   |
-| 12  | 資料表、`CREATE TABLE`、`INSERT`／`SELECT`／`UPDATE`／`DELETE`、參數綁定、`bun:sqlite`                                                         |
-| 13  | HTTP 方法與狀態碼、REST、`Bun.serve`、`fetch`、驗證 `unknown` 輸入                                                                             |
-| 14  | 泛型、discriminated union、工具型別、`never` 窮盡檢查                                                                                          |
+| Day | 教完之後學員會的東西                                                                                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 01  | `console.log`、`const`／`let`、`string`／`number`／`boolean`、樣板字串、`typeof`、`Number()`／`String()`、讀型別錯誤                                   |
+| 02  | 物件型別、陣列型別與索引、`.length`、`type`、`interface`、選用屬性、union、literal type、`undefined`／`null`、最基本的 `if` 型別縮小                   |
+| 03  | `if`／`else`、比較與邏輯運算、三元運算、`switch`、`for`／`for...of`／`while`、`push`、函式宣告與箭頭函式、參數與回傳型別、預設參數、作用域、call stack |
+| 04  | `map`／`filter`／`find`／`some`／`every`／`reduce`、展開與解構、值與參考、不可變更新、`readonly`                                                       |
+| 05  | CRUD 的定義、用函式操作記憶體中的陣列、產生 `id`、`prompt()` 互動                                                                                      |
+| 06  | `export`／`import`／`import type`、檔案拆分、`throw`、`try`／`catch`、`unknown` 的錯誤物件、`bun:test`                                                 |
+| 07  | strict 各選項、命名規範、`any` 與 `unknown`、`as const`、Biome、`bun fmt`                                                                              |
+| 08  | `class`、建構子、屬性與方法、`this`、`#` 私有成員、getter、`static`                                                                                    |
+| 09  | `interface` 作為合約、`implements`、`abstract`、多型                                                                                                   |
+| 10  | `extends`、`super`、繼承與組合的取捨、分層架構、相依注入、自訂錯誤類別                                                                                 |
+| 11  | 同步與非同步、Promise、`async`／`await`、event loop、`Promise.all`、檔案讀寫                                                                           |
+| 12  | 資料表、`CREATE TABLE`、`INSERT`／`SELECT`／`UPDATE`／`DELETE`、參數綁定、`bun:sqlite`                                                                 |
+| 13  | HTTP 方法與狀態碼、REST、`Bun.serve`、`fetch`、驗證 `unknown` 輸入                                                                                     |
+| 14  | 泛型、discriminated union、工具型別、`never` 窮盡檢查                                                                                                  |
 
 ## 10. 驗證
 
