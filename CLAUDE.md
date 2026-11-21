@@ -1,113 +1,30 @@
-Default to using Bun instead of Node.js.
+# 專案說明
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun check` instead of `tsc --noEmit`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+這是一套兩週的 TypeScript 入門課程，學員是這個 repo 的擁有者。課文是繁體中文，程式碼註解是英文。
 
-## APIs
+- 課綱與使用方式：`README.md`
+- 課程撰寫規範與 Todo 主線規格：`docs/lesson-authoring-guide.md`
+- 範本課程：`day-01-setup-variables-types/`
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+新增或修改任何一天的課程前，先讀 `docs/lesson-authoring-guide.md`。主線專案的型別與函式簽名以該文件第 8 節為準，不可自行更名。
 
-## Testing
+## 工具
 
-Use `bun test` to run tests.
+一律使用 Bun，不使用 Node.js、npm、ts-node、jest、vite、express。
 
-```ts#index.test.ts
-import { test, expect } from "bun:test";
+- `bun run <file>` 執行程式
+- `bun test day-NN` 執行某一天的測試；未作答的練習會失敗，這是預期行為
+- `SOLUTIONS=1 bun test` 用參考解答跑同一組測試，必須全部通過
+- `bun check` 型別檢查
+- `bunx biome check .` lint，不可以有 error、warning、info
+- `bun fmt day-* support docs` 排版
+- `bun run verify` 一次跑完上面所有檢查
 
-test("hello world", () => {
-  expect(1).toBe(1);
-});
-```
+不安裝外部套件。只用 Bun 內建功能（`bun:test`、`bun:sqlite`、`Bun.serve`、`Bun.file`）與 `node:` 標準模組。Bun 的 API 以 `node_modules/bun-types/docs/` 內的文件為準。
 
-## Type checking
+## 修改課程後
 
-Use `bun check` to type check the project. It reads `tsconfig.json` and reports the same errors as `tsc`.
-
-- `bun check src/index.ts` checks one file and what it imports
-- `bun --check src/index.ts`, `bun test --check` and `bun build --check` type check first, and do nothing else if there is an error
-
-## Frontend
-
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
-
-Server:
-
-```ts#index.ts
-import index from "./index.html"
-
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
-```
-
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
-
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
-```
-
-With the following `frontend.tsx`:
-
-```tsx#frontend.tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
-
-// import .css files directly and it works
-import './index.css';
-
-const root = createRoot(document.body);
-
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
-
-root.render(<Frontend />);
-```
-
-Then, run index.ts
-
-```sh
-bun --hot ./index.ts
-```
-
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+1. 對改過的資料夾執行第 10 節的驗證指令。
+2. 逐一執行改過的範例，確認輸出與課文一致。
+3. 驗證改過的 Mermaid 圖能正常轉圖。
+4. 課綱有變動時同步更新 `README.md` 的課綱表格。

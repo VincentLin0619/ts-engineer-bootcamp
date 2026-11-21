@@ -5,9 +5,9 @@
   "scripts": {
     "typecheck": "bun check",
     "lint": "biome check .",
-    "format": "bun fmt day-* support",
+    "format": "bun fmt",
     "test:solutions": "SOLUTIONS=1 bun test",
-    "verify": "bun check && biome check . && bun fmt --check day-* support && SOLUTIONS=1 bun test"
+    "verify": "bun check && biome check . && bun fmt --check && SOLUTIONS=1 bun test"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.8",
