@@ -1,0 +1,19 @@
+{
+  "name": "ts-engineer-bootcamp",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "typecheck": "bun check",
+    "lint": "biome check .",
+    "format": "bun fmt day-* support",
+    "test:solutions": "SOLUTIONS=1 bun test",
+    "verify": "bun check && biome check . && bun fmt --check day-* support && SOLUTIONS=1 bun test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^7"
+  }
+}
