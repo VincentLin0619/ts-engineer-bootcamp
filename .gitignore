@@ -37,3 +37,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .data/
 *.sqlite
 *.sqlite-journal
+
+# course website build output
+site/dist/
+site/src/client/player/scenes/registry.generated.ts

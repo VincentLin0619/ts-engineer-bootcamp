@@ -115,6 +115,8 @@ flowchart LR
 
 很多難找的 bug 都來自這裡：程式的某個角落改了物件，另一個角落的資料跟著變了，卻看不出是誰改的。
 
+> ▶ 動畫演示：[兩個名字指向同一個物件，以及展開 `...` 怎麼做出真正的副本](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-04/#anim-day04-reference)
+
 ### 4. 展開與解構
 
 展開（spread）用 `...` 把陣列的每個值，或物件的每個屬性，放進一個新的陣列或物件：

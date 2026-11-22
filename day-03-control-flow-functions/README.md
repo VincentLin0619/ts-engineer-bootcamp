@@ -147,6 +147,8 @@ flowchart TD
 - `while` 的流程相同，只是沒有「起點」與「更新」兩格，要自己在大括號裡改變條件用到的變數。
 - 條件永遠成立，迴圈就永遠不會停，這叫做無窮迴圈（infinite loop）。程式卡住時按 `Ctrl + C` 中斷。
 
+> ▶ 動畫演示：[for...of 迴圈怎麼一筆一筆數出完成了幾件事](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-03/#anim-day03-count-done)
+
 ### 6. 函式：幫一段程式取名字
 
 函式（function）是「有名字、可以重複使用的一段程式」。它接收輸入，叫做參數（parameter）；交出一個輸出，叫做回傳值（return value）。前兩天的練習已經用過函式的外殼，今天把每個部分看清楚：
@@ -243,6 +245,8 @@ flowchart LR
 - 只有最上面的函式正在執行，下面的都在等它回傳。
 - 最後被呼叫的函式最先結束。
 - `bun test` 失敗時印出的那幾行 `at ...`，就是出錯當下的 call stack，由上往下讀可以看出是誰呼叫了誰。
+
+> ▶ 動畫演示：[call stack 怎麼長高，又怎麼一層一層縮回來](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-03/#anim-day03-call-stack)
 
 ## 逐步解說
 
