@@ -5,8 +5,46 @@ import {
   isExercisePath,
   parseCheck,
   parseJunit,
+  randomSecret,
+  readCookie,
+  SESSION_COOKIE,
+  safeEqual,
+  sessionCookie,
   testFileFor,
 } from "./study-api.ts";
+
+describe("session helpers", () => {
+  test("random secrets are long and different every time", () => {
+    const first = randomSecret();
+    expect(first).toMatch(/^[0-9a-f]{64}$/);
+    expect(randomSecret()).not.toBe(first);
+  });
+
+  test("safeEqual only accepts the exact secret", () => {
+    expect(safeEqual("abc123", "abc123")).toBe(true);
+    expect(safeEqual("abc124", "abc123")).toBe(false);
+    expect(safeEqual("abc12", "abc123")).toBe(false);
+    expect(safeEqual(null, "abc123")).toBe(false);
+    expect(safeEqual(undefined, "abc123")).toBe(false);
+  });
+
+  test("readCookie finds the session among other cookies", () => {
+    expect(
+      readCookie(
+        `theme=dark; ${SESSION_COOKIE}=s3cret; other=1`,
+        SESSION_COOKIE,
+      ),
+    ).toBe("s3cret");
+    expect(readCookie("theme=dark", SESSION_COOKIE)).toBeUndefined();
+    expect(readCookie(null, SESSION_COOKIE)).toBeUndefined();
+  });
+
+  test("the session cookie cannot be read by scripts or sent cross-site", () => {
+    const cookie = sessionCookie("s3cret");
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie).toContain("SameSite=Strict");
+  });
+});
 
 describe("isExercisePath", () => {
   test("accepts lesson and LeetCode exercise files", () => {

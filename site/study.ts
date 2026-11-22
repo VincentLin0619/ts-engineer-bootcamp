@@ -4,7 +4,11 @@
 // so the in-page editor can read and save exercise files and run `bun test`
 // and `bun check` on them. Safety rules (see site/src/study-api.ts):
 //   - listens on 127.0.0.1 only and checks the Host and Origin headers
-//   - every API call needs the random token injected into the served pages
+//   - the launch URL printed in the terminal carries a one-run secret;
+//     visiting it sets an HttpOnly, SameSite=Strict session cookie
+//   - pages get the API token only when the request has that cookie, and
+//     every API call needs both the cookie and the token, so other programs
+//     on this machine cannot use the API just by fetching a page
 //   - only existing exercise files can be read or written (no tests,
 //     solutions or new files), at most 256 KB
 //   - only `bun test`, `bun check` and read-only `git` run, with fixed
@@ -21,13 +25,23 @@ import {
   MAX_FILE_BYTES,
   parseCheck,
   parseJunit,
+  randomSecret,
+  readCookie,
+  SESSION_COOKIE,
+  safeEqual,
+  sessionCookie,
   testFileFor,
 } from "./src/study-api.ts";
 
 const ROOT = join(import.meta.dir, "..");
 const DIST = join(import.meta.dir, "dist");
 const PORT = Number(process.argv.find((arg) => /^\d+$/.test(arg)) ?? 4322);
-const TOKEN = crypto.randomUUID();
+/** In the launch URL only; exchanged for the session cookie. */
+const LAUNCH_SECRET = randomSecret(24);
+/** Value of the HttpOnly session cookie. */
+const SESSION = randomSecret();
+/** Sent by the page in the x-study-token header; only handed to sessions. */
+const API_TOKEN = randomSecret();
 const COMMAND_TIMEOUT_MS = 30_000;
 
 const running = new Set<string>();
@@ -108,9 +122,23 @@ function pathParam(value: unknown): string | undefined {
 // ---------------------------------------------------------------------------
 // API
 
+function hasSession(request: Request): boolean {
+  return safeEqual(
+    readCookie(request.headers.get("cookie"), SESSION_COOKIE),
+    SESSION,
+  );
+}
+
 async function api(request: Request, url: URL): Promise<Response> {
-  if (request.headers.get("x-study-token") !== TOKEN)
-    return fail("缺少或錯誤的 token。", 403);
+  if (
+    !hasSession(request) ||
+    !safeEqual(request.headers.get("x-study-token"), API_TOKEN)
+  ) {
+    return fail(
+      "缺少或錯誤的 token。請用終端機印出的網址開啟本機學習模式。",
+      403,
+    );
+  }
   const method = request.method;
 
   if (url.pathname === "/api/file" && method === "GET") {
@@ -218,7 +246,16 @@ async function api(request: Request, url: URL): Promise<Response> {
 // ---------------------------------------------------------------------------
 // Static files
 
-async function page(pathname: string): Promise<Response> {
+const LOCKED_PAGE = `<!doctype html>
+<html lang="zh-Hant-TW"><head><meta charset="utf-8"><title>本機學習模式</title>
+<style>body{font-family:system-ui,sans-serif;max-width:36rem;margin:4rem auto;padding:0 1rem;line-height:1.8;color:#575279;background:#faf4ed}code{background:#f2e9e1;padding:.1em .3em;border-radius:4px}</style>
+</head><body>
+<h1>請用終端機印出的網址開啟</h1>
+<p>本機學習模式可以改寫你電腦裡的練習檔，所以只接受從 <code>bun run study</code> 印出的網址開啟。那個網址裡有一組只在這次啟動有效的密碼。</p>
+<p>回到執行 <code>bun run study</code> 的終端機，複製「本機學習模式」那一行的網址，貼到瀏覽器。</p>
+</body></html>`;
+
+async function page(pathname: string, request: Request): Promise<Response> {
   const safe = normalize(decodeURIComponent(pathname)).replace(
     /^(\.\.[/\\])+/,
     "",
@@ -231,8 +268,17 @@ async function page(pathname: string): Promise<Response> {
     const file = Bun.file(path);
     if (!(await file.exists())) continue;
     if (path.endsWith(".html")) {
+      if (!hasSession(request)) {
+        return new Response(LOCKED_PAGE, {
+          status: 401,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "no-store",
+          },
+        });
+      }
       const html = await file.text();
-      const config = `<script>window.studyConfig=${JSON.stringify({ token: TOKEN })}</script>`;
+      const config = `<script>window.studyConfig=${JSON.stringify({ token: API_TOKEN })}</script>`;
       return new Response(html.replace("</head>", `${config}\n</head>`), {
         headers: {
           "content-type": "text/html; charset=utf-8",
@@ -259,6 +305,30 @@ const server = Bun.serve({
     const url = new URL(request.url);
     if (!isAllowedHost(request.headers.get("host"), PORT))
       return fail("不允許的 Host。", 403);
+    // The launch URL: trade the secret for a session cookie, then drop the
+    // secret from the address bar and the browser history.
+    const launch = url.searchParams.get("token");
+    if (launch !== null) {
+      url.searchParams.delete("token");
+      const target = `${url.pathname}${url.search}${url.hash}`;
+      if (!safeEqual(launch, LAUNCH_SECRET)) {
+        return new Response(LOCKED_PAGE, {
+          status: 401,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "no-store",
+          },
+        });
+      }
+      return new Response(null, {
+        status: 303,
+        headers: {
+          location: target,
+          "set-cookie": sessionCookie(SESSION),
+          "cache-control": "no-store",
+        },
+      });
+    }
     if (url.pathname.startsWith("/api/")) {
       if (!isAllowedOrigin(request.headers.get("origin"), PORT))
         return fail("不允許的來源。", 403);
@@ -269,12 +339,13 @@ const server = Bun.serve({
         return fail("伺服器發生錯誤，請看終端機的訊息。", 500);
       }
     }
-    return page(url.pathname);
+    return page(url.pathname, request);
   },
 });
 
-const address = `http://127.0.0.1:${server.port}/`;
+const address = `http://127.0.0.1:${server.port}/?token=${LAUNCH_SECRET}`;
 console.log(`本機學習模式：${address}`);
+console.log("這個網址含有只在這次啟動有效的密碼，請不要分享。");
 console.log(
   "練習區會出現編輯器，存檔直接寫回 exercises/ 裡的檔案。按 Ctrl+C 結束。",
 );

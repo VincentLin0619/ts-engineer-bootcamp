@@ -58,6 +58,45 @@ export function contentHash(text: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Session: the launch URL printed in the terminal carries a token; visiting it
+// once sets an HttpOnly cookie. Only requests with that cookie get the API
+// token, so other local programs cannot obtain it by fetching a page.
+
+export const SESSION_COOKIE = "study_session";
+
+export function randomSecret(bytes = 32): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (value) =>
+    value.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
+/** Compares two secrets without leaking where they first differ. */
+export function safeEqual(a: string | null | undefined, b: string): boolean {
+  if (typeof a !== "string" || a.length !== b.length) return false;
+  let difference = 0;
+  for (let index = 0; index < b.length; index += 1) {
+    difference |= a.charCodeAt(index) ^ b.charCodeAt(index);
+  }
+  return difference === 0;
+}
+
+export function readCookie(
+  header: string | null,
+  name: string,
+): string | undefined {
+  if (!header) return undefined;
+  for (const part of header.split(";")) {
+    const [key, ...rest] = part.trim().split("=");
+    if (key === name) return rest.join("=");
+  }
+  return undefined;
+}
+
+export function sessionCookie(value: string): string {
+  return `${SESSION_COOKIE}=${value}; HttpOnly; SameSite=Strict; Path=/`;
+}
+
+// ---------------------------------------------------------------------------
 // Test results (bun test --reporter=junit)
 
 export type TestCase = {
