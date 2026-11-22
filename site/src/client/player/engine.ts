@@ -2,7 +2,7 @@
 // walkthrough with playback controls, quizzes and editable inputs.
 
 import { highlightLines } from "../../highlight.ts";
-import { iconButton, setIcon, speedSelect } from "../ui.ts";
+import { iconButton, MOTION, setIcon, speedSelect } from "../ui.ts";
 import {
   createPanels,
   el,
@@ -44,7 +44,10 @@ export class Player {
   readonly #quiz = el("div", "player-quiz");
   readonly #counter = el("span", "player-counter");
   readonly #range = el("input", "player-range");
-  readonly #playButton = iconButton("play", "播放");
+  readonly #playButton = iconButton("play", "播放", "ctl-play");
+  readonly #cursor = Object.assign(el("li", "code-cursor"), {
+    ariaHidden: "true",
+  });
   readonly #prevButton = iconButton("prev", "上一步");
   readonly #nextButton = iconButton("next", "下一步");
   readonly #firstButton = iconButton("first", "回到第一步");
@@ -197,12 +200,32 @@ export class Player {
   #renderCode(code: string): void {
     this.#code = highlightLines(code, this.#scene.language ?? "ts");
     this.#codeList.replaceChildren(
+      this.#cursor,
       ...this.#code.map((html) => {
         const line = el("li", "code-line");
         line.innerHTML = html.length > 0 ? html : " ";
         return line;
       }),
     );
+    this.#cursor.classList.add("is-hidden");
+  }
+
+  /** Slides the highlight bar to cover the active lines. */
+  #moveCursor(lines: HTMLElement[]): void {
+    const first = lines[0];
+    const last = lines.at(-1);
+    if (!first || !last) {
+      this.#cursor.classList.add("is-hidden");
+      return;
+    }
+    const top = first.offsetTop;
+    const height = last.offsetTop + last.offsetHeight - top;
+    const wasHidden = this.#cursor.classList.contains("is-hidden");
+    // The first appearance should not slide in from the top of the list.
+    this.#cursor.classList.toggle("no-slide", wasHidden);
+    this.#cursor.style.transform = `translateY(${top}px)`;
+    this.#cursor.style.height = `${height}px`;
+    this.#cursor.classList.remove("is-hidden");
   }
 
   #go(index: number, byUser: boolean): void {
@@ -223,21 +246,38 @@ export class Player {
           ? snapshot.line
           : [snapshot.line],
     );
-    let firstActive: HTMLElement | undefined;
-    Array.from(this.#codeList.children).forEach((node, index) => {
+    const lines = Array.from(
+      this.#codeList.querySelectorAll<HTMLElement>(".code-line"),
+    );
+    const activeLines = lines.filter((node, index) => {
       const isActive = active.has(index + 1);
       node.classList.toggle("is-active", isActive);
-      if (isActive && !firstActive && node instanceof HTMLElement)
-        firstActive = node;
+      return isActive;
     });
+    this.#moveCursor(activeLines);
+    const firstActive = activeLines[0];
     if (firstActive) this.#scrollCode(firstActive);
 
-    this.#note.innerHTML = formatNote(snapshot.note);
+    const note = formatNote(snapshot.note);
+    if (this.#note.innerHTML !== note) {
+      this.#note.innerHTML = note;
+      if (!reducedMotion()) {
+        this.#note.animate(
+          [
+            { opacity: 0, transform: "translateY(4px)" },
+            { opacity: 1, transform: "none" },
+          ],
+          { duration: MOTION.base, easing: MOTION.enter },
+        );
+      }
+    }
     renderPanels(this.#panels, snapshot);
     this.#renderQuiz(snapshot);
 
     const total = this.#snapshots.length;
     this.#range.value = String(this.#index);
+    const progress = total > 1 ? (this.#index / (total - 1)) * 100 : 100;
+    this.#range.style.setProperty("--progress", `${progress}%`);
     this.#counter.textContent = `第 ${this.#index + 1} / ${total} 步`;
     this.#prevButton.disabled = this.#index === 0;
     this.#firstButton.disabled = this.#index === 0;

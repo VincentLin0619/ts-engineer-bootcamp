@@ -29,7 +29,12 @@
 
   --measure: 44rem;
   --radius-s: 6px;
-  --radius-m: 10px;
+  --radius-m: 12px;
+  --dur-fast: 160ms;
+  --dur: 280ms;
+  --dur-slow: 480ms;
+  --ease-enter: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-move: cubic-bezier(0.65, 0, 0.35, 1);
   --gutter: clamp(1rem, 4vw, 2.5rem);
   color-scheme: light;
 }
@@ -863,7 +868,6 @@ svg {
   align-items: center;
   gap: 0.25rem;
   padding: 0.4rem 0.6rem;
-  border-top: 1px solid var(--line);
   background: var(--hl);
   flex-wrap: wrap;
 }
@@ -894,8 +898,10 @@ pre.mermaid
     [data-et="message"],
     text.messageText
   ) {
-  opacity: 0.14;
-  transition: opacity 0.4s ease;
+  opacity: 0.3;
+  transition:
+    opacity var(--dur) var(--ease-enter),
+    stroke var(--dur) var(--ease-enter);
 }
 
 pre.mermaid svg.is-animating .anim-lit {
@@ -904,16 +910,12 @@ pre.mermaid svg.is-animating .anim-lit {
 
 pre.mermaid svg :is(path, line).anim-focus {
   stroke: var(--iris) !important;
-  stroke-width: 2.6px !important;
+  stroke-width: 2px !important;
 }
 
 pre.mermaid svg g.anim-focus > :is(rect, polygon, path, circle, ellipse) {
   stroke: var(--iris) !important;
-  stroke-width: 2.4px !important;
-}
-
-pre.mermaid svg g.edgeLabel.anim-focus {
-  filter: drop-shadow(0 0 4px var(--iris));
+  stroke-width: 2px !important;
 }
 
 pre.mermaid svg g[class^="row-rect"].anim-focus path {
@@ -1037,7 +1039,6 @@ pre.mermaid svg text.messageText.anim-focus {
 
 .player-head {
   padding: 0.85rem 1.1rem 0.75rem;
-  border-bottom: 1px solid var(--line);
 }
 
 .player-title {
@@ -1063,7 +1064,6 @@ pre.mermaid svg text.messageText.anim-focus {
   gap: 0.6rem 1rem;
   align-items: end;
   padding: 0.75rem 1.1rem;
-  border-bottom: 1px solid var(--line);
   background: var(--hl);
 }
 
@@ -1130,18 +1130,16 @@ pre.mermaid svg text.messageText.anim-focus {
   background: var(--bg);
   overflow: auto;
   max-height: 26rem;
-  border-bottom: 1px solid var(--line);
 }
 
 @media (min-width: 52rem) {
   .player-code {
-    border-bottom: 0;
-    border-right: 1px solid var(--line);
     max-height: none;
   }
 }
 
 .code-lines {
+  position: relative;
   list-style: none;
   counter-reset: line;
   margin: 0;
@@ -1152,13 +1150,10 @@ pre.mermaid svg text.messageText.anim-focus {
 }
 
 .code-line {
+  position: relative;
   counter-increment: line;
   white-space: pre;
   padding: 0 1rem 0 0;
-  border-left: 3px solid transparent;
-  transition:
-    background-color 0.25s ease,
-    border-color 0.25s ease;
 }
 
 .code-line::before {
@@ -1172,8 +1167,7 @@ pre.mermaid svg text.messageText.anim-focus {
 }
 
 .code-line.is-active {
-  background: color-mix(in srgb, var(--iris) 16%, transparent);
-  border-left-color: var(--iris);
+  color: var(--text);
 }
 
 .code-line.is-active::before {
@@ -1191,7 +1185,8 @@ pre.mermaid svg text.messageText.anim-focus {
 
 .panel-title {
   margin: 0 0 0.35rem;
-  font-size: 0.8rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.02em;
   color: var(--faint);
 }
 
@@ -1203,7 +1198,6 @@ pre.mermaid svg text.messageText.anim-focus {
 
 .player-note {
   padding: 0.9rem 1.1rem;
-  border-top: 1px solid var(--line);
   font-size: 1.02rem;
   min-height: 4.2rem;
   line-height: 1.7;
@@ -1215,7 +1209,6 @@ pre.mermaid svg text.messageText.anim-focus {
 
 .player-quiz {
   padding: 0.85rem 1.1rem 1rem;
-  border-top: 1px dashed var(--line);
   background: color-mix(in srgb, var(--gold) 9%, transparent);
 }
 
@@ -1278,7 +1271,6 @@ pre.mermaid svg text.messageText.anim-focus {
   align-items: center;
   gap: 0.3rem;
   padding: 0.5rem 0.75rem;
-  border-top: 1px solid var(--line);
   flex-wrap: wrap;
 }
 
@@ -1311,10 +1303,15 @@ pre.mermaid svg text.messageText.anim-focus {
 }
 
 .player-range {
+  --progress: 0%;
   flex: 1 1 8rem;
   min-width: 6rem;
-  accent-color: var(--iris);
-  margin: 0 0.5rem;
+  margin: 0 0.75rem;
+  height: 1.25rem;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
 }
 
 .player-counter {
@@ -2042,4 +2039,142 @@ pre.mermaid svg text.messageText.anim-focus {
 
 .study-conflict[hidden] {
   display: none;
+}
+
+/* ------------------------------------------- motion: modern minimal */
+
+/* One highlight bar glides between the active lines of the code panel. */
+.code-cursor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--iris) 14%, transparent);
+  box-shadow: inset 2px 0 0 var(--iris);
+  transition:
+    transform var(--dur) var(--ease-move),
+    height var(--dur) var(--ease-move),
+    opacity var(--dur-fast) var(--ease-enter);
+}
+
+.code-cursor.no-slide {
+  transition: opacity var(--dur-fast) var(--ease-enter);
+}
+
+.code-cursor.is-hidden {
+  opacity: 0;
+}
+
+.slot-value,
+.cell-value {
+  display: inline-block;
+}
+
+/* Progress line: a 3px track that fills in the accent colour. */
+.player-range::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    var(--iris) var(--progress),
+    var(--line) var(--progress)
+  );
+}
+
+.player-range::-moz-range-track {
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    var(--iris) var(--progress),
+    var(--line) var(--progress)
+  );
+}
+
+.player-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 11px;
+  height: 11px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--iris);
+  border: 0;
+  transition: transform var(--dur-fast) var(--ease-enter);
+}
+
+.player-range::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--iris);
+  border: 0;
+}
+
+.player-range:hover::-webkit-slider-thumb,
+.player-range:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.25);
+}
+
+/* Controls: ghost icons, with one round primary play button. */
+.ctl {
+  transition:
+    background-color var(--dur-fast) var(--ease-enter),
+    color var(--dur-fast) var(--ease-enter);
+}
+
+.ctl.ctl-play {
+  width: 2.4rem;
+  height: 2.4rem;
+  margin: 0 0.15rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.ctl.ctl-play:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+
+/* Layers by background instead of divider lines. */
+.player-panels {
+  background: var(--surface);
+}
+
+.player-note,
+.player-controls {
+  background: var(--surface);
+}
+
+.player-controls {
+  padding-top: 0.25rem;
+}
+
+.study-head,
+.study-toolbar,
+.study-results,
+.study-types,
+.study-conflict {
+  border-color: transparent;
+}
+
+@media (max-width: 40rem) {
+  .player-range {
+    order: 10;
+    flex-basis: 100%;
+    margin: 0.35rem 0.25rem 0.1rem;
+  }
+
+  .player-counter {
+    margin-left: auto;
+  }
+
+  /* The progress line can jump anywhere, so phones skip ⏮ and ▶|. */
+  .player-controls .ctl[aria-label="回到第一步"],
+  .player-controls .ctl[aria-label="跳到最後一步"] {
+    display: none;
+  }
 }

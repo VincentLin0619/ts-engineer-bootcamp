@@ -1,6 +1,7 @@
 // DOM rendering for the player's panels. Elements are kept and updated in
 // place (keyed by name or id) so CSS transitions can show what changed.
 
+import { el, MOTION, reducedMotion, themeColor } from "../ui.ts";
 import type {
   ArrayPanel,
   Frame,
@@ -15,19 +16,7 @@ import type {
   TablePanel,
 } from "./types.ts";
 
-export const reducedMotion = (): boolean =>
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-export function el<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  className?: string,
-  text?: string,
-): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text !== undefined) node.textContent = text;
-  return node;
-}
+export { el, reducedMotion };
 
 /** Turns `code` and **bold** in a note into HTML. Everything else is escaped. */
 export function formatNote(text: string): string {
@@ -40,11 +29,17 @@ export function formatNote(text: string): string {
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 }
 
+/** A changed value rises into place and briefly takes the accent colour. */
 function flash(node: HTMLElement): void {
   if (reducedMotion()) return;
+  const accent = themeColor("--iris", "#c4a7e7");
   node.animate(
-    [{ backgroundColor: "var(--flash)" }, { backgroundColor: "transparent" }],
-    { duration: 900, easing: "ease-out" },
+    [
+      { transform: "translateY(0.5em)", opacity: 0, color: accent },
+      { transform: "none", opacity: 1, color: accent, offset: 0.55 },
+      { transform: "none", opacity: 1 },
+    ],
+    { duration: MOTION.slow, easing: MOTION.enter },
   );
 }
 
@@ -97,7 +92,7 @@ function sync<T>(
           { opacity: 0, transform: "translateY(-6px)" },
           { opacity: 1, transform: "none" },
         ],
-        { duration: 320, easing: "ease-out" },
+        { duration: MOTION.base, easing: MOTION.enter },
       );
     }
     wanted.push(created);
@@ -110,10 +105,13 @@ function sync<T>(
     }
     leaving.dataset.leaving = "";
     leaving
-      .animate([{ opacity: 1 }, { opacity: 0, transform: "scale(0.96)" }], {
-        duration: 240,
-        easing: "ease-in",
-      })
+      .animate(
+        [{ opacity: 1 }, { opacity: 0, transform: "translateY(-6px)" }],
+        {
+          duration: MOTION.fast,
+          easing: MOTION.move,
+        },
+      )
       .finished.then(() => leaving.remove())
       .catch(() => leaving.remove());
   }
@@ -365,9 +363,15 @@ function renderHeap(content: HTMLElement, heap: HeapPanel | undefined): void {
   window.setTimeout(() => drawArrows(target), 340);
 }
 
+/** Arrows already on screen, per heap panel, so only new ones get drawn in. */
+const drawnArrows = new WeakMap<HTMLElement, Set<string>>();
+
 function drawArrows(grid: HTMLElement): void {
   const svg = grid.querySelector("svg");
   if (!svg) return;
+  const previous = drawnArrows.get(grid) ?? new Set<string>();
+  const current = new Set<string>();
+  const fresh: string[] = [];
   const box = grid.getBoundingClientRect();
   svg.setAttribute("viewBox", `0 0 ${box.width} ${box.height}`);
   svg.setAttribute("width", String(box.width));
@@ -399,9 +403,31 @@ function drawArrows(grid: HTMLElement): void {
       const mid = (x1 + x2) / 2;
       d = `M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}`;
     }
-    paths.push(`<path d="${d}" marker-end="url(#heap-head)"/>`);
+    const owner =
+      source.closest<HTMLElement>(".heap-object")?.dataset.obj ?? "root";
+    const key = `${owner}:${source.dataset.key ?? ""}->${source.dataset.ref ?? ""}`;
+    current.add(key);
+    const isNew = !previous.has(key) && !reducedMotion();
+    if (isNew) fresh.push(key);
+    // A new arrow is drawn in first; its arrowhead appears on the next redraw.
+    paths.push(
+      isNew
+        ? `<path d="${d}" class="arrow-new" data-key="${CSS.escape(key)}"/>`
+        : `<path d="${d}" marker-end="url(#heap-head)"/>`,
+    );
   }
   svg.innerHTML = paths.join("");
+  drawnArrows.set(grid, current);
+  for (const path of svg.querySelectorAll<SVGPathElement>("path.arrow-new")) {
+    const length = path.getTotalLength();
+    path.animate(
+      [
+        { strokeDasharray: `${length}`, strokeDashoffset: `${length}` },
+        { strokeDasharray: `${length}`, strokeDashoffset: "0" },
+      ],
+      { duration: MOTION.base, easing: MOTION.move },
+    );
+  }
 }
 
 /** Approximate width in em: CJK characters are about twice as wide as Latin. */

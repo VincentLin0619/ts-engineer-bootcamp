@@ -27,8 +27,9 @@ export function el<K extends keyof HTMLElementTagNameMap>(
 export function iconButton(
   icon: keyof typeof ICONS,
   label: string,
+  extraClass?: string,
 ): HTMLButtonElement {
-  const button = el("button", "ctl");
+  const button = el("button", extraClass ? `ctl ${extraClass}` : "ctl");
   button.type = "button";
   setIcon(button, icon, label);
   return button;
@@ -63,3 +64,26 @@ export function speedSelect(
 
 export const reducedMotion = (): boolean =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/**
+ * The site's single motion language: three durations and two curves.
+ * Motion only explains what just changed; nothing glows, flashes or bounces.
+ * The same values exist as CSS variables in styles.css.
+ */
+export const MOTION = {
+  fast: 160,
+  base: 280,
+  slow: 480,
+  /** Things arriving: quick start, gentle stop. */
+  enter: "cubic-bezier(0.2, 0.7, 0.2, 1)",
+  /** Things moving from one place to another. */
+  move: "cubic-bezier(0.65, 0, 0.35, 1)",
+} as const;
+
+/** Reads a colour token such as `--iris` from the current theme. */
+export function themeColor(name: string, fallback: string): string {
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
+  return value || fallback;
+}

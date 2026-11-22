@@ -13,6 +13,11 @@ export type DiagramStep = {
   caption: string;
   /** Elements that become (and stay) lit from this step on. */
   reveal: Element[];
+  /**
+   * The part of `reveal` lit as soon as the step starts (where a moving line
+   * sets off). The rest lights up when the line arrives.
+   */
+  revealFirst?: Element[];
   /** Elements emphasised only during this step. */
   focus: Element[];
   /** Route of the travelling dot, if any. */
@@ -165,6 +170,19 @@ function nearestShape(
 }
 
 /** Clusters that contain a node, so they light up together with it. */
+/** Everything drawn inside a cluster, so a lit box never has dark contents. */
+function contentsOf(shapes: Shape[], cluster: Shape): Element[] {
+  if (!cluster.isCluster) return [];
+  return shapes
+    .filter((shape) => {
+      if (shape === cluster) return false;
+      const x = (shape.box.left + shape.box.right) / 2;
+      const y = (shape.box.top + shape.box.bottom) / 2;
+      return distanceToBox(x, y, cluster.box) === 0;
+    })
+    .map((shape) => shape.element);
+}
+
 function clustersAround(shapes: Shape[], target: Shape): Element[] {
   if (target.isCluster) return [target.element];
   const center = {
@@ -246,15 +264,21 @@ function edgeSteps(
       kind === "structure"
         ? `「${fromName}」和「${toName}」${labelText ? `：${labelText}` : ""}`
         : `「${fromName}」→「${toName}」${labelText ? `：${labelText}` : ""}`;
-    const reveal: Element[] = [edge];
+    const around = (shape: Shape | undefined): Element[] =>
+      shape
+        ? [
+            shape.element,
+            ...clustersAround(shapes, shape),
+            ...contentsOf(shapes, shape),
+          ]
+        : [];
+    const first = around(from);
+    const reveal: Element[] = [edge, ...first, ...around(to)];
     if (label) reveal.push(label);
-    for (const shape of [from, to]) {
-      if (!shape) continue;
-      reveal.push(shape.element, ...clustersAround(shapes, shape));
-    }
     steps.push({
       caption,
       reveal,
+      revealFirst: first,
       focus: label ? [edge, label] : [edge],
       motion: { kind: "path", element: edge },
       ...(to ? { pulse: to.element } : {}),
