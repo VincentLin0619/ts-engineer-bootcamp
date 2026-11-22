@@ -2,6 +2,7 @@
 // walkthrough with playback controls, quizzes and editable inputs.
 
 import { highlightLines } from "../../highlight.ts";
+import { iconButton, setIcon, speedSelect } from "../ui.ts";
 import {
   createPanels,
   el,
@@ -19,31 +20,6 @@ import {
   type Snapshot,
   type Step,
 } from "./types.ts";
-
-const SPEEDS = [0.5, 1, 1.5, 2] as const;
-
-const ICONS = {
-  first:
-    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg>',
-  prev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 5v14L6 12z"/></svg>',
-  play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg>',
-  pause:
-    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>',
-  next: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14l11-7z"/></svg>',
-  last: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg>',
-} as const;
-
-function iconButton(
-  icon: keyof typeof ICONS,
-  label: string,
-): HTMLButtonElement {
-  const button = el("button", "ctl");
-  button.type = "button";
-  button.innerHTML = ICONS[icon];
-  button.setAttribute("aria-label", label);
-  button.title = label;
-  return button;
-}
 
 type QuizRecord = { chosen: number };
 
@@ -116,15 +92,10 @@ export class Player {
     this.#range.name = "step";
     this.#range.min = "0";
     this.#range.setAttribute("aria-label", "跳到第幾步");
-    const speed = el("select", "player-speed");
-    speed.name = "speed";
-    speed.setAttribute("aria-label", "播放速度");
-    for (const value of SPEEDS) {
-      const option = el("option", undefined, `${value}×`);
-      option.value = String(value);
-      option.selected = value === 1;
-      speed.append(option);
-    }
+    const speed = speedSelect((value) => {
+      this.#speed = value;
+      if (this.#playing) this.#schedule();
+    });
     controls.append(
       this.#firstButton,
       this.#prevButton,
@@ -152,10 +123,6 @@ export class Player {
     this.#range.addEventListener("input", () =>
       this.#go(Number(this.#range.value), true),
     );
-    speed.addEventListener("change", () => {
-      this.#speed = Number(speed.value);
-      if (this.#playing) this.#schedule();
-    });
     root.addEventListener("keydown", (event) => {
       const target = event.target;
       if (target instanceof HTMLInputElement && target.type === "text") return;
@@ -348,18 +315,14 @@ export class Player {
       this.#show();
     }
     this.#playing = true;
-    this.#playButton.innerHTML = ICONS.pause;
-    this.#playButton.setAttribute("aria-label", "暫停");
-    this.#playButton.title = "暫停";
+    setIcon(this.#playButton, "pause", "暫停");
     this.#schedule();
   }
 
   #pause(): void {
     this.#playing = false;
     window.clearTimeout(this.#timer);
-    this.#playButton.innerHTML = ICONS.play;
-    this.#playButton.setAttribute("aria-label", "播放");
-    this.#playButton.title = "播放";
+    setIcon(this.#playButton, "play", "播放");
   }
 
   #delay(): number {

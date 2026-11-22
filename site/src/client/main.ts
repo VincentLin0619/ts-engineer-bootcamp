@@ -1,6 +1,7 @@
 // Browser entry point: theme switch, Mermaid diagrams, self-check lists,
 // course progress and the animation players.
 
+import { attachDiagramAnimators } from "./diagram/animator.ts";
 import { Player } from "./player/engine.ts";
 import { sceneLoaders } from "./player/scenes/registry.generated.ts";
 
@@ -128,6 +129,7 @@ async function renderDiagrams(): Promise<void> {
     }
     mermaid.initialize(mermaidTheme());
     await mermaid.run({ nodes });
+    attachDiagramAnimators();
   } catch {
     for (const node of nodes) node.classList.add("mermaid-failed");
   }

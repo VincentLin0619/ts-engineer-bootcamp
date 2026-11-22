@@ -61,7 +61,7 @@ function slugify(text: string): string {
 function renderCode(language: string | undefined, encoded: string): string {
   const source = decodeEntities(encoded).replace(/\n$/, "");
   if (language === "mermaid") {
-    return `<div class="diagram"><pre class="mermaid" data-src="${escapeHtml(source)}">${escapeHtml(source)}</pre></div>`;
+    return `<div class="diagram"><div class="diagram-scroll"><pre class="mermaid" data-src="${escapeHtml(source)}">${escapeHtml(source)}</pre></div></div>`;
   }
   const lang = toLanguage(language);
   const label = LANGUAGE_LABELS[lang];

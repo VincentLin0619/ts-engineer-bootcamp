@@ -831,21 +831,97 @@ svg {
 
 .diagram {
   margin: 0 0 1.5rem;
-  padding: 1.25rem 1rem;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-m);
+  overflow: hidden;
+}
+
+.diagram-scroll {
   overflow-x: auto;
+  padding: 1.25rem 1rem;
   text-align: center;
 }
 
 .diagram pre.mermaid {
+  position: relative;
   margin: 0;
   font-family: var(--font-text);
   font-size: 0.85rem;
   color: var(--muted);
   white-space: pre-wrap;
   text-align: left;
+}
+
+.diagram-canvas {
+  position: absolute;
+  pointer-events: none;
+}
+
+.diagram-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.6rem;
+  border-top: 1px solid var(--line);
+  background: var(--hl);
+  flex-wrap: wrap;
+}
+
+.diagram-caption {
+  flex: 1 1 14rem;
+  margin: 0 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  min-width: 0;
+}
+
+.diagram-counter {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+  margin-right: 0.25rem;
+}
+
+/* While a diagram plays, everything not yet reached is dimmed. */
+pre.mermaid
+  svg.is-animating
+  :where(
+    g.node,
+    g.cluster,
+    path[data-edge],
+    g.edgeLabel,
+    [data-et="message"],
+    text.messageText
+  ) {
+  opacity: 0.14;
+  transition: opacity 0.4s ease;
+}
+
+pre.mermaid svg.is-animating .anim-lit {
+  opacity: 1;
+}
+
+pre.mermaid svg :is(path, line).anim-focus {
+  stroke: var(--iris) !important;
+  stroke-width: 2.6px !important;
+}
+
+pre.mermaid svg g.anim-focus > :is(rect, polygon, path, circle, ellipse) {
+  stroke: var(--iris) !important;
+  stroke-width: 2.4px !important;
+}
+
+pre.mermaid svg g.edgeLabel.anim-focus {
+  filter: drop-shadow(0 0 4px var(--iris));
+}
+
+pre.mermaid svg g[class^="row-rect"].anim-focus path {
+  fill: color-mix(in srgb, var(--iris) 30%, transparent) !important;
+}
+
+pre.mermaid svg text.messageText.anim-focus {
+  fill: var(--iris) !important;
 }
 
 .diagram pre.mermaid[data-processed] {
@@ -1730,5 +1806,17 @@ svg {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 40rem) {
+  .diagram-caption {
+    order: 10;
+    flex-basis: 100%;
+    margin: 0.25rem 0.25rem 0.1rem;
+  }
+
+  .diagram-counter {
+    margin-left: auto;
   }
 }
