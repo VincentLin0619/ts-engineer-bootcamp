@@ -202,6 +202,8 @@ sequenceDiagram
 - Service 的每個修改都是同樣三步：找出來、請 `Todo` 自己改、存回去。
 - 錯誤在發現問題的那一層丟出（Service），在知道怎麼告訴使用者的那一層接住（CLI）。中間不需要每一層都寫 `try`／`catch`。
 
+> ▶ 動畫演示：[`done 1` 穿過 CLI、Service、Repository 再回來，`done 99` 的錯誤怎麼傳回 CLI](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-10/#anim-day10-layers)
+
 ## 逐步解說
 
 以下每一步對應 `examples/` 裡的一個檔案。請在專案根目錄執行指令。

@@ -4,6 +4,7 @@
 import type {
   ArrayPanel,
   Frame,
+  HeapObject,
   HeapPanel,
   LanesPanel,
   MapPanel,
@@ -283,6 +284,33 @@ function renderStack(
   });
 }
 
+/** Groups heap objects by their shortest reference distance from a root. */
+function heapColumns(heap: HeapPanel | undefined): HeapObject[][] {
+  if (!heap) return [];
+  const byId = new Map(heap.objects.map((object) => [object.id, object]));
+  const depth = new Map<string, number>();
+  const queue: Array<[string, number]> = heap.roots.flatMap((slot) =>
+    slot.ref ? [[slot.ref, 0] as [string, number]] : [],
+  );
+  while (queue.length > 0) {
+    const next = queue.shift();
+    if (!next) break;
+    const [id, level] = next;
+    if (depth.has(id)) continue;
+    depth.set(id, level);
+    for (const slot of byId.get(id)?.slots ?? []) {
+      if (slot.ref && !depth.has(slot.ref)) queue.push([slot.ref, level + 1]);
+    }
+  }
+  const columns: HeapObject[][] = [];
+  for (const object of heap.objects) {
+    const level = depth.get(object.id) ?? 0;
+    while (columns.length <= level) columns.push([]);
+    columns[level]?.push(object);
+  }
+  return columns.filter((column) => column.length > 0);
+}
+
 function renderHeap(content: HTMLElement, heap: HeapPanel | undefined): void {
   let grid = content.querySelector<HTMLElement>(".heap");
   if (!grid) {
@@ -300,22 +328,35 @@ function renderHeap(content: HTMLElement, heap: HeapPanel | undefined): void {
   const objects = grid.querySelector<HTMLElement>(".heap-objects");
   if (!roots || !objects) return;
   syncSlots(roots, heap?.roots ?? []);
+
+  // Objects are placed in columns by how many references away from a
+  // variable they are, so every arrow points to the right.
+  const columns = heapColumns(heap);
+  grid.style.setProperty("--heap-cols", String(Math.max(1, columns.length)));
   sync(
     objects,
-    heap?.objects ?? [],
-    (object) => object.id,
-    () => {
-      const card = el("div", "heap-object");
-      card.append(el("p", "heap-label"), el("div", "heap-slots"));
-      return card;
-    },
-    (card, object) => {
-      card.dataset.obj = object.id;
-      const [label, slots] = Array.from(card.children) as HTMLElement[];
-      if (!label || !slots) return;
-      label.textContent = object.label;
-      syncSlots(slots, object.slots);
-      setMark(card, object.mark);
+    columns.map((column, index) => ({ column, index })),
+    (entry) => String(entry.index),
+    () => el("div", "heap-col"),
+    (col, entry) => {
+      sync(
+        col,
+        entry.column,
+        (object) => object.id,
+        () => {
+          const card = el("div", "heap-object");
+          card.append(el("p", "heap-label"), el("div", "heap-slots"));
+          return card;
+        },
+        (card, object) => {
+          card.dataset.obj = object.id;
+          const [label, slots] = Array.from(card.children) as HTMLElement[];
+          if (!label || !slots) return;
+          label.textContent = object.label;
+          syncSlots(slots, object.slots);
+          setMark(card, object.mark);
+        },
+      );
     },
   );
   const target = grid;
@@ -453,6 +494,11 @@ function renderMap(content: HTMLElement, map: MapPanel | undefined): void {
   if (name)
     name.textContent =
       map.entries.length === 0 ? `${map.name}（空的）` : map.name;
+  const isSet = map.kind === "set";
+  table.dataset.kind = isSet ? "set" : "map";
+  const title =
+    content.parentElement?.querySelector<HTMLElement>(".panel-title");
+  if (title) title.textContent = isSet ? "Set" : "Map";
   sync(
     table,
     map.entries,

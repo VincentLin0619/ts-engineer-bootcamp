@@ -318,6 +318,8 @@ bun run day-02-type-system/examples/05-todo.ts
 5. `todos[10]` 是空的位置，得到 `undefined`。
 6. 檔案最後一行被註解掉的程式把 `priority` 寫成 `"urgent"`。拿掉 `//` 再執行 `bun check day-02-type-system/examples/05-todo.ts`，會看到 `TS2322: Type '"urgent"' is not assignable to type 'Priority'.`。看完把 `//` 加回去。
 
+> ▶ 動畫演示：[`todos[0]` 的型別為什麼是 `Todo | undefined`，以及 `if` 檢查前後型別怎麼變化](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-02/#anim-day02-index-narrowing)
+
 ## 規範重點
 
 - **資料的形狀用 `type`，名稱用 PascalCase**，例如 `Todo`、`Priority`。看到大寫開頭就知道它是型別，不是變數。

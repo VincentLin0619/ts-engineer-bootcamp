@@ -45,6 +45,9 @@ export type ArrayPanel = {
 
 export type MapPanel = {
   name: string;
+  /** `"set"` shows keys only, for a `Set`. Defaults to `"map"`. */
+  kind?: "map" | "set";
+  /** For a Set, pass `[value, ""]` pairs. */
   entries: Array<[key: string, value: string]>;
   /** Key to emphasise. */
   focus?: string;

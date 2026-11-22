@@ -125,6 +125,8 @@ flowchart LR
 - event loop（事件迴圈）不斷重複同一件事：call stack 空了，就從佇列取出下一件工作來執行。
 - 排隊的工作要等 call stack 空了才輪得到。一段跑很久的同步程式，會讓所有排隊的工作一起等。
 
+> ▶ 動畫演示：[call stack、佇列與 event loop 怎麼決定 1 到 6 的印出順序](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-11/#anim-day11-event-loop)
+
 ### 5. 失敗的 Promise：`try`／`catch`
 
 `await` 一個 rejected 的 Promise 時，`await` 會把裡面的錯誤 `throw` 出來，所以用 Day 06 學過的 `try`／`catch` 就能處理：

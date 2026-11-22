@@ -155,6 +155,8 @@ function errorMessage(error: unknown): string {
 }
 ```
 
+> ▶ 動畫演示：[錯誤怎麼穿過沒有 `try`／`catch` 的函式，沿著 call stack 回到 `catch`](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-06/#anim-day06-throw-catch)
+
 ### 7. 輸入驗證
 
 驗證（validation）是在資料進入系統時檢查一次，不合格就拒絕。這樣系統內部的資料永遠是合格的，後面的程式不必到處重複檢查。

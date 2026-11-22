@@ -14,7 +14,7 @@ const CODE_LINES = {
 } as const;
 
 function code(nums: number[], target: number): string {
-  return `function twoSum(nums: number[], target: number): number[] {
+  return `function twoSum(nums: readonly number[], target: number): number[] {
   const seen = new Map<number, number>(); // value -> index
   for (const [i, value] of nums.entries()) {
     const need = target - value;
@@ -105,7 +105,8 @@ function buildSteps(nums: number[], target: number): Step[] {
     if (i === 0) {
       lookup.question = {
         prompt: `seen 現在是空的，\`seen.get(${need})\` 會得到什麼？`,
-        choices: ["`undefined`", "`0`", `\`${need}\``],
+        // Avoid two identical choices when `need` happens to be 0.
+        choices: ["`undefined`", "`0`", need === 0 ? "`null`" : `\`${need}\``],
         answer: 0,
         explain: "Map 裡找不到這個 key 時，`get` 回傳 `undefined`。",
       };
@@ -169,15 +170,15 @@ const scene: Scene = {
   id: "leetcode-0001-two-sum",
   title: "Two Sum：用 Map 記住看過的數字",
   summary:
-    "一邊往右走，一邊問 Map「需要的那個數字出現過嗎？」。改改看輸入，觀察找到答案的時機。",
+    "一邊往右走，一邊問 Map「需要的另一半出現過嗎？」。改改看輸入，觀察找到答案的時機。",
   inputs: [
     {
       name: "nums",
       label: "nums",
-      value: "2, 7, 11, 15",
+      value: "3, 8, 5, 1",
       hint: "2 到 10 個整數，用逗號分開",
     },
-    { name: "target", label: "target", value: "9", hint: "一個整數" },
+    { name: "target", label: "target", value: "13", hint: "一個整數" },
   ],
   code: (input) =>
     code(
@@ -195,8 +196,8 @@ export default scene;
 
 /** Extra inputs checked by `bun site/check-scenes.ts`. */
 export const testInputs: InputValues[] = [
-  { nums: "3, 2, 4", target: "6" },
-  { nums: "1, 2, 3", target: "100" },
-  { nums: "5, 5", target: "10" },
-  { nums: "-3, 8, 4, -1", target: "3" },
+  { nums: "6, 6", target: "12" },
+  { nums: "2, 4, 7", target: "20" },
+  { nums: "6, 1", target: "12" },
+  { nums: "-4, 10, 7, 3", target: "3" },
 ];

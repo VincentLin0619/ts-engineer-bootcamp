@@ -85,6 +85,8 @@ flowchart LR
 - `filter` 改變筆數，不改變型別；`map` 改變型別，不改變筆數。
 - 由左到右讀，就是資料經過的順序：`todos.filter(...).map(...)`。
 
+> ▶ 動畫演示：[`filter` 一筆一筆決定留下誰，`map` 再把留下的每一筆換成標題](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-04/#anim-day04-filter-map)
+
 ### 3. 值與參考
 
 為什麼要強調「原本的沒有變」？因為物件與陣列在指派時不會被複製。

@@ -156,6 +156,8 @@ flowchart LR
 - 在類別裡讀寫自己的屬性一定要寫 `this.`，只寫 `done = true` 是錯的。
 - 在建構子裡，`this` 是正在被建立的那個新實例。
 
+> ▶ 動畫演示：[兩個 `Todo` 實例在記憶體裡，`milk.complete()` 的 `this` 指向誰、改到誰](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-08/#anim-day08-this-instances)
+
 ### 5. 封裝：`#` 私有成員與 getter
 
 名稱前面加 `#` 的成員是私有的（private）：只有這個類別內部的程式碼可以讀寫，外面連讀都不行。方法也可以加 `#`，變成只給類別內部呼叫的私有方法。

@@ -109,6 +109,8 @@ flowchart LR
 - 不能用 `todos.length + 1`。有 #1、#2 兩筆時刪掉 #1，剩下一筆，`length + 1` 會算出 2，和現有的 #2 重複。
 - `done` 固定從 `false` 開始，不讓呼叫的人決定。
 
+> ▶ 動畫演示：[刪掉 #1 之後再新增，`nextId` 怎麼算出不重複的 `id`，`createTodo` 怎麼做出新陣列](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-05/#anim-day05-crud-create)
+
 ### 4. Read：找不到時回傳 `undefined`
 
 `findTodoById` 用 Day 04 學過的 `find`。要找的 `id` 不一定存在，所以回傳型別是 `Todo | undefined`。
@@ -178,6 +180,8 @@ todos.map((todo) => (todo.id === id ? { ...todo, ...changes } : todo))
                            │              └─ 先複製這一筆的所有屬性
                            └─ 這一筆是要改的那一筆嗎？
 ```
+
+> ▶ 動畫演示：[`updateTodo` 怎麼做出新陣列：沒改的共用同一個物件，改的那一筆複製出新物件](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-05/#anim-day05-crud-update)
 
 ### 6. Delete：只留下 `id` 不同的
 

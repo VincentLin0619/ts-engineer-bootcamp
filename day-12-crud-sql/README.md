@@ -169,6 +169,8 @@ db.query("SELECT id, title FROM todos WHERE title = ?").all(userInput)
 
 有好幾個 `?` 時，值依照順序對應：第一個值給第一個 `?`。用了參數綁定，不管值裡面有引號還是 SQL 關鍵字，它都只是一段文字。
 
+> ▶ 動畫演示：[`INSERT`、`SELECT`、`UPDATE`、`DELETE` 綁定了哪些值，資料表的哪幾列跟著改變](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-12/#anim-day12-sql-crud)
+
 ### 6. 把列轉成物件
 
 資料庫回傳的列還不是 `Todo`，有兩個欄位需要轉換：

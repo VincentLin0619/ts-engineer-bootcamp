@@ -112,6 +112,8 @@ flowchart TD
 - 真的不知道才用 `unknown`，而且它只是中繼站：檢查之後就會變成精確的型別。
 - `any` 還會擴散：從 `any` 讀出來的東西也是 `any`，一路把檢查關掉。
 
+> ▶ 動畫演示：[`unknown` 的值經過 `typeof` 與 `instanceof` 檢查，怎麼在各個分支裡變成精確的型別](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-07/#anim-day07-unknown-narrowing)
+
 ### 5. `readonly` 與 `as const`：這份資料不會變
 
 `readonly` 寫在型別裡，表示「不可以透過這個名字修改它」。最常用在陣列參數（Day 04、Day 05）：`todos: readonly Todo[]` 是對呼叫者的承諾。

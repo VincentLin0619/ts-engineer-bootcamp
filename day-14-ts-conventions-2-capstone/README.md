@@ -108,6 +108,8 @@ flowchart TD
 - `Result` 和 `throw` 的分工：呼叫的人**當下就要處理**的失敗用 `Result`（例如解析使用者輸入）；要交給很遠的地方統一處理的失敗用 `throw`（例如 Day 13 交給 `toErrorResponse`）。
 - 判別屬性不一定叫 `ok`。有三種以上情況時常用 `kind`，例如 `{ kind: "add"; title: string } | { kind: "done"; id: number }`。
 
+> ▶ 動畫演示：[`if (result.ok)` 前後，`result` 的型別怎麼縮小](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-14/#anim-day14-result-narrowing)
+
 ### 4. 用 `never` 做窮盡檢查
 
 `never` 是「沒有任何值」的型別。用 `switch` 處理 discriminated union 時，每處理掉一種情況，剩下的可能就少一種；全部處理完，剩下的型別就是 `never`。

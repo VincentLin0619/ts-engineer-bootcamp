@@ -1046,7 +1046,7 @@ svg {
 
 @media (min-width: 52rem) {
   .player-body {
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 
@@ -1321,6 +1321,7 @@ svg {
 .heap .slot-value,
 .heap-object .slot-value {
   margin-left: auto;
+  white-space: nowrap;
 }
 
 .slot-value.slot-ref {
@@ -1369,20 +1370,38 @@ svg {
   color: var(--faint);
 }
 
+.panel-heap .panel-content {
+  overflow-x: auto;
+}
+
 .heap {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(6.5rem, 0.7fr) minmax(0, 1.3fr);
-  gap: 1rem 2.75rem;
+  grid-template-columns: minmax(5rem, 8rem) minmax(0, 1fr);
+  gap: 1rem 2rem;
   align-items: start;
+  min-width: calc(6rem + var(--heap-cols, 1) * 8.5rem);
+}
+
+.heap-objects {
+  display: flex;
+  gap: 2rem;
+  align-items: start;
+  position: relative;
+  z-index: 1;
 }
 
 .heap-roots,
-.heap-objects {
+.heap-col {
   display: grid;
   gap: 0.5rem;
   position: relative;
   z-index: 1;
+}
+
+.heap-col {
+  flex: 1 1 0;
+  min-width: 6.5rem;
 }
 
 .heap-roots .slot {
@@ -1395,7 +1414,6 @@ svg {
   border-radius: var(--radius-s);
   background: var(--bg);
   padding: 0.3rem 0.4rem 0.4rem;
-  margin-right: 1.5rem;
   transition: background-color 0.3s ease;
 }
 
@@ -1529,6 +1547,19 @@ svg {
 .kv-key::after {
   content: " →";
   color: var(--faint);
+}
+
+.kv[data-kind="set"] .kv-row {
+  grid-template-columns: 1fr;
+}
+
+.kv[data-kind="set"] .kv-key::after,
+.kv[data-kind="set"] .kv-value {
+  display: none;
+}
+
+.kv[data-kind="set"] {
+  grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
 }
 
 .kv-value {

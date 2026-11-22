@@ -80,6 +80,8 @@ sequenceDiagram
 - 選擇執行哪一個 `pay()` 的不是呼叫的人，而是實例自己。
 - 新增一種付款方式只要新增一個類別，`checkout()` 一個字都不用改。
 
+> ▶ 動畫演示：[同一行 `method.pay(amount)`，依實例的類別疊上不同的 `pay()`](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-09/#anim-day09-polymorphism)
+
 ### 3. 針對介面寫程式，不針對實作
 
 把參數的型別寫成介面（`TodoRepository`），不要寫成某一個類別（`InMemoryTodoRepository`）。這樣函式只依賴合約，任何遵守合約的類別都可以傳進來，包括還沒寫出來的。

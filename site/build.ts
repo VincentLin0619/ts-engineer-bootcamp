@@ -160,7 +160,10 @@ async function discoverProblems(): Promise<ProblemInfo[]> {
       leetcodeUrl: `https://leetcode.com/problems/${name.slice(5)}/`,
     });
   }
-  return problems;
+  // Learning order: by the lesson after which each problem is recommended.
+  return problems.sort(
+    (a, b) => (a.afterDay ?? 99) - (b.afterDay ?? 99) || a.id - b.id,
+  );
 }
 
 // ---------------------------------------------------------------------------

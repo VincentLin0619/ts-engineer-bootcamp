@@ -349,3 +349,10 @@ bun test day-NN                               # 未作答的題目必須失敗
 ```bash
 bun run verify
 ```
+
+## 11. 網站動畫
+
+每一課在網站上都可以嵌入程式執行動畫。新增動畫的方法、課文裡的標記寫法與驗證方式，見 [`animation-authoring-guide.md`](animation-authoring-guide.md)。
+
+- 動畫放在它所演示的觀念說明與圖解之後。
+- 改了範例程式時，同步檢查有沒有動畫節錄了那段程式，一起更新。

@@ -235,6 +235,8 @@ sequenceDiagram
 - 實線是呼叫，虛線是回傳。每一層只跟相鄰的一層說話。
 - 進來時資料一路從 JSON 文字變成 `unknown`、通過檢查的物件、`Todo` 實例；出去時用 `toData()` 變回純資料，再轉成 JSON 文字。
 
+> ▶ 動畫演示：[`POST /todos` 一路到 SQLite 再帶著 201 回來，`GET /todos/99` 怎麼變成 404](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-13/#anim-day13-http-request)
+
 ### 9. 測試與手動操作：`fetch` 與 `curl`
 
 `fetch` 是程式裡的 client。`await fetch(網址, { method, headers, body })` 送出 request，等到的是 response：`response.status` 是狀態碼，`await response.json()` 讀出 body（一樣先當 `unknown`）。

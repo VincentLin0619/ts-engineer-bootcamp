@@ -156,6 +156,8 @@ bun run day-01-setup-variables-types/examples/03-basic-types.ts
 4. 樣板字串（template literal）用反引號 `` ` `` 包起來，裡面的 `${...}` 會被換成變數的值。
 5. 最後示範型別轉換：`Number("42")` 把文字轉成數字，`String(42)` 把數字轉成文字。
 
+> ▶ 動畫演示：[每個變數帶著什麼型別，以及 `let` 的變數怎麼重新指派](https://vincentlin0619.github.io/ts-engineer-bootcamp/day-01/#anim-day01-variables)
+
 ### 步驟 4：看懂型別錯誤
 
 檔案：[`examples/04-type-errors.ts`](examples/04-type-errors.ts)
