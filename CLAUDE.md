@@ -31,6 +31,8 @@
 - `site/build.ts` 把每一課的 README、`leetcode/` 與 `ROADMAP.md` 轉成網頁，輸出到 `site/dist/`（不進 git）。
 - 動畫場景在 `site/src/client/player/scenes/`，檔名等於場景 id。課文用一行 `> ▶ 動畫演示：[…](…#anim-<id>)` 嵌入。
 - `bun site/check-scenes.ts [id…]` 驗證場景；`bun run site:check` 型別檢查；`bun run site:build` 建置；`bun run site:dev` 建置後在 `http://localhost:4321/` 預覽。
+- `bun run study` 本機學習模式：`site/study.ts` 在 `127.0.0.1:4322` 提供網站與 API，讓練習段落的 Monaco 編輯器讀寫 `exercises/*.ts`、執行 `bun test`／`bun check`。安全規則（路徑白名單、token、Host/Origin 檢查）集中在 `site/src/study-api.ts`，修改時同步更新 `site/src/study-api.test.ts`。
+- 每張 Mermaid 圖在網站上自動有逐步動畫（`site/src/client/diagram/`），說明可用 `%% step:` 改寫，見 `docs/animation-authoring-guide.md` 第 8 節。
 
 ## 修改課程後
 

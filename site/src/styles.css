@@ -1820,3 +1820,226 @@ pre.mermaid svg text.messageText.anim-focus {
     margin-left: auto;
   }
 }
+
+/* ------------------------------------------------- local study mode */
+
+.study-hint {
+  margin: 0 0 1.25rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-s);
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.study-panel {
+  display: grid;
+  gap: 1.25rem;
+  margin: 0 0 2rem;
+  width: min(64rem, calc(100vw - 2 * var(--gutter)));
+}
+
+@media (min-width: 62rem) {
+  .lesson .study-panel {
+    width: min(62rem, calc(100vw - 15.5rem - 3rem - 2 * var(--gutter)));
+  }
+}
+
+.study-intro {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.study-intro kbd {
+  font-family: var(--font-code);
+  font-size: 0.85em;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.study-error {
+  color: var(--love);
+}
+
+.study-block {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.study-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.85rem;
+}
+
+.study-file {
+  font-family: var(--font-code);
+  color: var(--text);
+}
+
+.study-status {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.study-editor {
+  min-height: 14rem;
+}
+
+.study-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.55rem 0.9rem;
+  border-top: 1px solid var(--line);
+  background: var(--hl);
+}
+
+.study-button {
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+}
+
+.study-button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.study-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.study-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: 500;
+}
+
+.study-summary {
+  margin-left: auto;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.study-summary[data-state="pass"] {
+  color: var(--pine);
+  font-weight: 500;
+}
+
+.study-summary[data-state="fail"] {
+  color: var(--love);
+  font-weight: 500;
+}
+
+.study-conflict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  font-size: 0.9rem;
+}
+
+.study-conflict p {
+  margin: 0 0.5rem 0 0;
+  flex-basis: 100%;
+}
+
+.study-types {
+  padding: 0.5rem 0.9rem;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--love) 8%, transparent);
+}
+
+.study-types-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
+  color: var(--love);
+  font-weight: 500;
+}
+
+.study-type-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-code);
+  font-size: 0.8rem;
+  color: var(--text);
+  background: none;
+  border: 0;
+  padding: 0.15rem 0;
+  cursor: pointer;
+}
+
+.study-type-row:hover {
+  color: var(--accent);
+}
+
+.study-note {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.study-results:empty {
+  display: none;
+}
+
+.study-results {
+  border-top: 1px solid var(--line);
+  padding: 0.5rem 0.9rem 0.7rem;
+}
+
+.study-cases {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.study-case {
+  padding: 0.25rem 0;
+  font-size: 0.88rem;
+}
+
+.study-case + .study-case {
+  border-top: 1px dashed var(--line);
+}
+
+.study-case.is-pass .study-case-name {
+  color: var(--pine);
+}
+
+.study-case.is-fail .study-case-name {
+  color: var(--love);
+}
+
+.study-case-message,
+.study-crash {
+  margin: 0.25rem 0 0.15rem 1.2rem;
+  font-family: var(--font-code);
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+  color: var(--muted);
+}
+
+.study-conflict[hidden] {
+  display: none;
+}

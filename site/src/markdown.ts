@@ -4,6 +4,7 @@
 
 import { posix } from "node:path";
 import { escapeHtml, highlightLines, toLanguage } from "./highlight.ts";
+import { isExercisePath } from "./study-api.ts";
 
 export type Heading = { id: string; text: string; level: 2 | 3 };
 
@@ -153,9 +154,18 @@ export function renderMarkdown(
     },
   );
 
-  // Links.
+  // Links. Links to exercise files also record the file's repository path,
+  // so the local study mode knows where to place an editor.
   html = html.replace(/href="([^"]+)"/g, (_match, href: string) => {
-    return `href="${escapeHtml(rewriteHref(decodeEntities(href), context))}"`;
+    const target = decodeEntities(href);
+    const rewritten = `href="${escapeHtml(rewriteHref(target, context))}"`;
+    if (/^(https?:|mailto:|#)/.test(target)) return rewritten;
+    const repoPath = posix.normalize(
+      posix.join(posix.dirname(context.sourcePath), target),
+    );
+    return isExercisePath(repoPath)
+      ? `${rewritten} data-exercise="${escapeHtml(repoPath)}"`
+      : rewritten;
   });
 
   // Wide tables scroll sideways on small screens.

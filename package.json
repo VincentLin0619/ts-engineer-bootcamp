@@ -10,6 +10,7 @@
     "verify": "bun check && biome check . && bun fmt --check && SOLUTIONS=1 bun test",
     "site:build": "bun site/build.ts",
     "site:dev": "bun site/build.ts && bun site/serve.ts",
+    "study": "bun site/build.ts && bun site/study.ts",
     "site:check": "bun site/build.ts --registry-only && bun check -p site"
   },
   "devDependencies": {

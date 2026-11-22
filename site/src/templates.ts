@@ -240,7 +240,7 @@ export function homePage(days: DayInfo[], problems: ProblemInfo[]): string {
       <li><strong>讀觀念說明</strong>，看懂每一張圖。</li>
       <li><strong>播放動畫</strong>：一步一步看程式怎麼執行，遇到「先猜猜看」就先想答案。</li>
       <li><strong>執行範例</strong>：在專案根目錄用 <code>bun run</code> 跑 <code>examples/</code> 裡的程式，改一個值再跑一次。</li>
-      <li><strong>做練習</strong>：完成 <code>exercises/</code> 裡標著 TODO 的地方，用 <code>bun test day-NN</code> 檢查。</li>
+      <li><strong>做練習</strong>：完成 <code>exercises/</code> 裡標著 TODO 的地方，用 <code>bun test day-NN</code> 檢查。也可以執行 <code>bun run study</code>，直接在網頁上寫、一鍵執行測試。</li>
       <li><strong>勾完自我檢查清單</strong>，再進入下一天。</li>
     </ol>
     <p class="how-setup">第一次使用：安裝 <a href="https://bun.com">Bun</a>，把 <a href="${SITE.repoUrl}">GitHub 上的專案</a> clone 下來，在根目錄執行 <code>bun install</code>。</p>

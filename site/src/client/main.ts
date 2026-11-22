@@ -4,6 +4,7 @@
 import { attachDiagramAnimators } from "./diagram/animator.ts";
 import { Player } from "./player/engine.ts";
 import { sceneLoaders } from "./player/scenes/registry.generated.ts";
+import { findPracticeSpot } from "./study/anchor.ts";
 
 const MERMAID_URL =
   "https://cdn.jsdelivr.net/npm/mermaid@12.3.0/dist/mermaid.esm.min.mjs";
@@ -197,8 +198,36 @@ function setupNavigation(): void {
   });
 }
 
+// --- local study mode ------------------------------------------------------
+
+declare global {
+  interface Window {
+    /** Injected only by the local study server (bun run study). */
+    studyConfig?: { token: string };
+  }
+}
+
+function setupStudyMode(): void {
+  const config = window.studyConfig;
+  if (config) {
+    // The editor lives in its own chunk, so the public site never downloads it.
+    void import("./study/editor.ts").then((module) =>
+      module.startStudyMode(config.token),
+    );
+    return;
+  }
+  const spot = findPracticeSpot();
+  if (!spot) return;
+  const hint = document.createElement("p");
+  hint.className = "study-hint";
+  hint.innerHTML =
+    "想直接在網頁上寫練習？在專案根目錄執行 <code>bun run study</code>，會打開本機版網站。這裡會出現編輯器，存檔直接寫回 <code>exercises/</code> 裡的檔案，還能一鍵執行測試。";
+  spot.after.after(hint);
+}
+
 setupThemeToggle(() => void renderDiagrams());
 setupNavigation();
 setupChecklists();
+setupStudyMode();
 void renderDiagrams();
 void mountPlayers();
