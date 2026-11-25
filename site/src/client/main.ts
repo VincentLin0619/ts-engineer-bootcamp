@@ -2,6 +2,12 @@
 // course progress and the animation players.
 
 import { attachDiagramAnimators } from "./diagram/animator.ts";
+import { decorateDiagram, ensureIconSprite } from "./diagram/decorate.ts";
+import {
+  type MermaidParser,
+  type Prepared,
+  prepareDiagram,
+} from "./diagram/prepare.ts";
 import { Player } from "./player/engine.ts";
 import { sceneLoaders } from "./player/scenes/registry.generated.ts";
 import { findPracticeSpot } from "./study/anchor.ts";
@@ -68,7 +74,7 @@ function setupThemeToggle(onChange: () => void): void {
 
 // --- mermaid ---------------------------------------------------------------
 
-type MermaidApi = {
+type MermaidApi = MermaidParser & {
   initialize(config: Record<string, unknown>): void;
   run(options: { nodes: HTMLElement[] }): Promise<void>;
 };
@@ -96,7 +102,7 @@ function mermaidTheme(): Record<string, unknown> {
       background: read("--surface"),
       primaryColor: read("--surface"),
       primaryTextColor: read("--text"),
-      primaryBorderColor: read("--accent"),
+      primaryBorderColor: read("--line"),
       secondaryColor: read("--overlay"),
       tertiaryColor: read("--bg"),
       lineColor: read("--muted"),
@@ -108,7 +114,7 @@ function mermaidTheme(): Record<string, unknown> {
       noteBkgColor: read("--overlay"),
       noteTextColor: read("--text"),
       actorBkg: read("--surface"),
-      actorBorder: read("--accent"),
+      actorBorder: read("--line"),
       actorTextColor: read("--text"),
       signalColor: read("--text"),
       signalTextColor: read("--text"),
@@ -124,12 +130,24 @@ async function renderDiagrams(): Promise<void> {
   if (nodes.length === 0) return;
   try {
     const mermaid = await loadMermaid();
+    // Initialise first: the parser used by prepareDiagram reads the config.
+    mermaid.initialize(mermaidTheme());
+    const prepared = new Map<HTMLElement, Prepared>();
     for (const node of nodes) {
       node.removeAttribute("data-processed");
-      node.textContent = node.dataset.src ?? node.textContent;
+      const ready = await prepareDiagram(
+        mermaid,
+        node.dataset.src ?? node.textContent ?? "",
+      );
+      prepared.set(node, ready);
+      node.textContent = ready.source;
     }
-    mermaid.initialize(mermaidTheme());
     await mermaid.run({ nodes });
+    ensureIconSprite(document);
+    for (const [node, ready] of prepared) {
+      const svg = node.querySelector("svg");
+      if (svg && ready.kind) decorateDiagram(svg, ready.kind, ready.icons);
+    }
     attachDiagramAnimators();
   } catch {
     for (const node of nodes) node.classList.add("mermaid-failed");
