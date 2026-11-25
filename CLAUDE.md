@@ -24,6 +24,8 @@
 
 課程本身不安裝外部套件。只用 Bun 內建功能（`bun:test`、`bun:sqlite`、`Bun.serve`、`Bun.file`、`Bun.markdown`、`Bun.build`）與 `node:` 標準模組。Bun 的 API 以 `node_modules/bun-types/docs/` 與 `node_modules/bun-types/bun.d.ts` 為準。
 
+課程網站（`site/`）唯一的例外是 `animejs`，由 `Bun.build` 打包進前端，供動畫與圖解使用；API 以 `node_modules/animejs/dist/modules/` 的型別定義為準。網站不得再加其他 runtime 套件。
+
 ## 課程網站
 
 網址：<https://vincentlin0619.github.io/ts-engineer-bootcamp/>。推送到 `main` 後，`.github/workflows/pages.yml` 會先跑 `bun run verify`，通過才建置並部署。
