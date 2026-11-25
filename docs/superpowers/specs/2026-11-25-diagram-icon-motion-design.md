@@ -78,9 +78,9 @@
 1. 形狀：菱形 `{ }`、圓柱 `[( )]`、膠囊 `([ ])` 這些非矩形節點一律不配圖示，見 5.1；`%% icon:` 也不能替它們加。state 圖的狀態一律不配圖示：狀態不是角色，而且只有個別狀態會被關鍵字配到，看起來會不一致（spike 後的判斷）。
 2. 原始碼裡的 `%% icon: <節點 id> <圖示名稱>` 覆寫。圖示名稱寫 `none` 代表不放。
 3. sequence 的 `actor` 配 `user`。
-4. 名稱關鍵字（不分大小寫），先只比對第一行。
-5. 連線語意：`implements`（flowchart 的 `-.->|"implements"|`、class 的 `..|>`）的起點配 `cube`、終點配 `contract`。這條排在比對其餘各行之前，`InMemoryTodoRepository<br/>合約的實作` 才不會因為第二行有「合約」被配成 `contract`（我的判斷）。
-6. 第一行沒有符合時，再比對其餘各行，例如 `TodoRepository<br/>介面：儲存的合約` 會配到 `contract`（我的判斷）。
+4. 連線語意：`implements`（flowchart 的 `-.->|"implements"|`、class 的 `..|>`）的起點配 `cube`、終點配 `contract`。這條排在所有關鍵字之前，同一張圖並排的三個實作（含 `SqliteTodoRepository`）才會一致，`todo-repository.ts` 這類介面檔也不會被當成檔案（2026-11-25 審查圖示清單後，使用者決定）。
+5. 名稱關鍵字（不分大小寫），只比對第一行。
+6. 第二行以後只用來判斷介面：含「interface／介面／合約／契約」且不含「實作」時配 `contract`，例如 `TodoRepository<br/>介面：儲存的合約`。其他關鍵字不看第二行以後，避免 `C：Create<br/>service.add` 這類說明文字被誤配（2026-11-25 使用者決定）。
 7. class 圖裡沒有被上面規則配到的類別，一律配 `cube`；`<<abstract>>` 也配 `cube`。所以 class 圖的 `TodoService` 仍然是 `gear`（我的判斷）。
 
 關鍵字表：

@@ -22,7 +22,10 @@ describe("pickIcon", () => {
     [["todo-service.ts"], "gear"],
     [["todos.json"], "file"],
     [["TodoRepository", "介面：儲存的合約"], "contract"],
-    [["InMemoryTodoRepository", "合約的實作"], "cube"],
+    [["InMemoryTodoRepository", "合約的實作"], undefined],
+    [["C：Create", "service.add"], undefined],
+    [["response 的 body", '{ "error": 訊息 }'], undefined],
+    [["Arrange 準備", "建立這個測試要用的資料"], undefined],
     [["ValidationError"], "alert"],
     [["400 Bad Request", "訊息：錯誤的 message"], "alert"],
     [["client", "curl、fetch、瀏覽器"], "globe"],
@@ -57,7 +60,21 @@ describe("pickIcon", () => {
     ).toBeUndefined();
   });
 
-  test("implements role beats later lines but not the first line", () => {
+  test("implements role beats every keyword", () => {
+    expect(
+      pickIcon(
+        node(["SqliteTodoRepository"], { implementsRole: "source" }),
+        none,
+      ),
+    ).toBe("cube");
+    expect(
+      pickIcon(
+        node(["TodoRepository（todo-repository.ts）"], {
+          implementsRole: "target",
+        }),
+        none,
+      ),
+    ).toBe("contract");
     expect(
       pickIcon(
         node(["JsonFileTodoRepository"], { implementsRole: "source" }),
