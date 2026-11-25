@@ -22,6 +22,8 @@ export type DiagramStep = {
   focus: Element[];
   /** Route of the travelling dot, if any. */
   motion?: Motion;
+  /** Text of the data chip that travels along the route, if any. */
+  chip?: string;
   /** Element that pulses when the dot arrives (or when the step starts). */
   pulse?: Element;
 };
@@ -36,6 +38,7 @@ export type DiagramPlan = {
 type Box = { left: number; top: number; right: number; bottom: number };
 
 const MAX_LABEL = 40;
+const MAX_CHIP = 24;
 
 function shorten(text: string): string {
   const flat = text
@@ -43,6 +46,16 @@ function shorten(text: string): string {
     .replace(/\s+/g, " ")
     .trim();
   return flat.length > MAX_LABEL ? `${flat.slice(0, MAX_LABEL - 1)}…` : flat;
+}
+
+/** Chip text: the first non-empty line, spaces collapsed, kept short. */
+export function chipText(text: string): string {
+  const line =
+    text
+      .split("\n")
+      .map((part) => part.replace(/\s+/g, " ").trim())
+      .find((part) => part !== "") ?? "";
+  return line.length > MAX_CHIP ? `${line.slice(0, MAX_CHIP - 1)}…` : line;
 }
 
 /** Visible text of a node, keeping the line breaks Mermaid draws. */
@@ -275,12 +288,14 @@ function edgeSteps(
     const first = around(from);
     const reveal: Element[] = [edge, ...first, ...around(to)];
     if (label) reveal.push(label);
+    const chip = chipText(labelOf(label));
     steps.push({
       caption,
       reveal,
       revealFirst: first,
       focus: label ? [edge, label] : [edge],
       motion: { kind: "path", element: edge },
+      ...(chip ? { chip } : {}),
       ...(to ? { pulse: to.element } : {}),
     });
   }
@@ -369,9 +384,19 @@ function sequenceSteps(svg: SVGSVGElement): {
   const dimmable: Element[] = [];
   messages.forEach((message, index) => {
     const text = texts[index];
-    const from = names.get(message.getAttribute("data-from") ?? "") ?? "";
-    const to = names.get(message.getAttribute("data-to") ?? "") ?? "";
+    const fromId = message.getAttribute("data-from") ?? "";
+    const toId = message.getAttribute("data-to") ?? "";
+    const from = names.get(fromId) ?? "";
+    const to = names.get(toId) ?? "";
     const words = shorten(text?.textContent ?? "");
+    const chip = chipText(text?.textContent ?? "");
+    // The receiver's top box pops on arrival; a self-call has no receiver.
+    const target =
+      toId && toId !== fromId
+        ? svg.querySelector(
+            `[data-et="participant"][data-id="${CSS.escape(toId)}"]`,
+          )
+        : null;
     const reveal = text ? [message, text] : [message];
     dimmable.push(...reveal);
     let motion: Motion | undefined;
@@ -384,6 +409,8 @@ function sequenceSteps(svg: SVGSVGElement): {
       reveal,
       focus: reveal,
       ...(motion ? { motion } : {}),
+      ...(chip ? { chip } : {}),
+      ...(target ? { pulse: target } : {}),
     });
   });
   return { steps, dimmable };
