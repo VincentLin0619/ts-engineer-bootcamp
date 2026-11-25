@@ -1,8 +1,15 @@
-// Step-by-step playback for Mermaid diagrams. The diagram stays an SVG; a
-// <canvas> laid over it draws the travelling dot, its fading trail and the
-// pulse when the dot arrives. Lighting and dimming are CSS classes on the
-// SVG elements.
+// Step-by-step playback for Mermaid diagrams. Lighting and dimming are CSS
+// classes on the SVG elements. While a step plays, a dotted line flows along
+// the step's edge (or message) and a chip with the edge's text rides on it.
+// Both are temporary SVG elements animated with animejs; the edge itself
+// keeps its own solid or dashed style.
 
+import {
+  animate,
+  svg as animeSvg,
+  createTimeline,
+  type JSAnimation,
+} from "animejs";
 import {
   el,
   iconButton,
@@ -10,14 +17,12 @@ import {
   reducedMotion,
   setIcon,
   speedSelect,
-  themeColor,
 } from "../ui.ts";
-import {
-  type DiagramPlan,
-  type DiagramStep,
-  type Motion,
-  planDiagram,
-} from "./steps.ts";
+import { type DiagramPlan, type DiagramStep, planDiagram } from "./steps.ts";
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+/** Diagrams with more steps than this show a progress line instead of dots. */
+const MAX_DOTS = 12;
 
 const instances = new WeakMap<HTMLElement, DiagramAnimator>();
 
@@ -34,72 +39,57 @@ export function attachDiagramAnimators(root: ParentNode = document): void {
   }
 }
 
-type Point = { x: number; y: number };
-
-function toScreen(
-  element: SVGGraphicsElement,
-  x: number,
-  y: number,
-): Point | undefined {
-  const matrix = element.getScreenCTM();
-  if (!matrix) return undefined;
-  return {
-    x: x * matrix.a + y * matrix.c + matrix.e,
-    y: x * matrix.b + y * matrix.d + matrix.f,
-  };
+function svgEl<K extends keyof SVGElementTagNameMap>(
+  tag: K,
+  className: string,
+): SVGElementTagNameMap[K] {
+  const element = document.createElementNS(SVG_NS, tag);
+  element.setAttribute("class", className);
+  return element;
 }
 
-/** Returns a function giving the dot's screen position for t in [0, 1]. */
-function route(motion: Motion): ((t: number) => Point | undefined) | undefined {
+/** The route of a step as path data, in its element's own coordinates. */
+function routeOf(step: DiagramStep): string | undefined {
+  const motion = step.motion;
+  if (!motion) return undefined;
   if (motion.kind === "path") {
-    const path = motion.element;
-    const length = path.getTotalLength();
-    return (t) => {
-      const point = path.getPointAtLength(length * t);
-      return toScreen(path, point.x, point.y);
-    };
+    return motion.element.getAttribute("d") ?? undefined;
   }
   const line = motion.element;
-  const x1 = line.x1.baseVal.value;
-  const y1 = line.y1.baseVal.value;
-  const x2 = line.x2.baseVal.value;
-  const y2 = line.y2.baseVal.value;
-  return (t) => toScreen(line, x1 + (x2 - x1) * t, y1 + (y2 - y1) * t);
+  return `M ${line.x1.baseVal.value} ${line.y1.baseVal.value} L ${line.x2.baseVal.value} ${line.y2.baseVal.value}`;
 }
 
-const ease = (t: number): number =>
-  t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-
 class DiagramAnimator {
-  readonly #pre: HTMLElement;
   readonly #svg: SVGSVGElement;
   readonly #plan: DiagramPlan;
-  readonly #canvas = el("canvas", "diagram-canvas");
   readonly #bar = el("div", "diagram-bar");
   readonly #caption = el("p", "diagram-caption");
-  readonly #counter = el("span", "diagram-counter");
+  readonly #badge = el("span", "diagram-step");
+  readonly #text = el("span", "diagram-caption-text");
+  readonly #progress = el("span", "diagram-dots");
+  readonly #marks: HTMLElement[] = [];
   readonly #first = iconButton("first", "回到完整的圖");
   readonly #prev = iconButton("prev", "上一步");
   readonly #play = iconButton("play", "播放流程", "ctl-play");
   readonly #next = iconButton("next", "下一步");
-  readonly #resize: ResizeObserver;
 
   /** -1 means idle: the whole diagram is shown and nothing is dimmed. */
   #index = -1;
   #speed = 1;
   #playing = false;
   #timer: number | undefined;
-  #frame: number | undefined;
+  /** Bumped on every cancel, so a stale flow cannot finish later. */
+  #flowToken = 0;
+  /** Undo actions for the running flow: stop animations, remove elements. */
+  #cleanups: (() => void)[] = [];
 
   constructor(pre: HTMLElement, svg: SVGSVGElement, plan: DiagramPlan) {
-    this.#pre = pre;
     this.#svg = svg;
     this.#plan = plan;
 
-    this.#canvas.setAttribute("aria-hidden", "true");
-    pre.append(this.#canvas);
-
     this.#caption.setAttribute("aria-live", "polite");
+    this.#caption.append(this.#badge, this.#text);
+    this.#buildProgress();
     const speed = speedSelect((value) => {
       this.#speed = value;
     });
@@ -109,7 +99,7 @@ class DiagramAnimator {
       this.#play,
       this.#next,
       this.#caption,
-      this.#counter,
+      this.#progress,
       speed,
     );
     const container = pre.closest(".diagram") ?? pre.parentElement;
@@ -127,18 +117,58 @@ class DiagramAnimator {
     });
     this.#play.addEventListener("click", () => this.#toggle());
 
-    this.#resize = new ResizeObserver(() => this.#fitCanvas());
-    this.#resize.observe(svg);
     this.#goIdle();
   }
 
   destroy(): void {
     this.#pause();
-    if (this.#frame !== undefined) cancelAnimationFrame(this.#frame);
-    this.#resize.disconnect();
-    this.#canvas.remove();
+    this.#cancelFlow();
     this.#bar.remove();
     this.#clearClasses();
+  }
+
+  // --- caption bar ---------------------------------------------------------
+
+  /** Number of real steps; the closing "whole diagram" step is not counted. */
+  get #total(): number {
+    return this.#plan.steps.length - 1;
+  }
+
+  #buildProgress(): void {
+    this.#progress.setAttribute("role", "img");
+    if (this.#total <= MAX_DOTS) {
+      for (let index = 0; index < this.#total; index += 1) {
+        const dot = el("i");
+        this.#marks.push(dot);
+        this.#progress.append(dot);
+      }
+      return;
+    }
+    const line = el("span", "diagram-progress");
+    const fill = el("i");
+    line.append(fill);
+    this.#marks.push(fill);
+    this.#progress.append(line);
+  }
+
+  #setProgress(index: number): void {
+    const total = this.#total;
+    const done = index >= total ? total : index + 1;
+    if (total <= MAX_DOTS) {
+      this.#marks.forEach((dot, at) => {
+        dot.classList.toggle("on", at < done);
+      });
+    } else if (this.#marks[0]) {
+      this.#marks[0].style.width = `${(done / total) * 100}%`;
+    }
+    this.#progress.setAttribute(
+      "aria-label",
+      index < 0
+        ? `共 ${total} 步`
+        : index >= total
+          ? "完成"
+          : `第 ${index + 1} / ${total} 步`,
+    );
   }
 
   // --- state ---------------------------------------------------------------
@@ -156,11 +186,11 @@ class DiagramAnimator {
     // Reset the step first: #pause() names the play button after it.
     this.#index = -1;
     this.#pause();
+    this.#cancelFlow();
     this.#clearClasses();
-    this.#clearCanvas();
-    const total = this.#plan.steps.length - 1;
-    this.#caption.textContent = `這張圖有 ${total} 個步驟，按 ▶ 從頭一步一步看。`;
-    this.#counter.textContent = `共 ${total} 步`;
+    this.#badge.hidden = true;
+    this.#text.textContent = `這張圖有 ${this.#total} 個步驟，按 ▶ 從頭一步一步看。`;
+    this.#setProgress(-1);
     this.#first.disabled = true;
     this.#prev.disabled = true;
     this.#next.disabled = false;
@@ -187,26 +217,27 @@ class DiagramAnimator {
   #show(index: number, animate: boolean): void {
     const step = this.#plan.steps[index];
     if (!step) return;
+    this.#cancelFlow();
     this.#index = index;
     this.#svg.classList.add("is-animating");
     const after = this.#litUpTo(index);
     const travelling = animate && step.motion !== undefined && !reducedMotion();
     if (travelling) {
-      // Light where the line starts; the edge, its label and the target
-      // appear once the line has been drawn all the way.
+      // Light where the flow starts; the edge, its label and the target
+      // appear once the flow has reached the end.
       const start = this.#litUpTo(index - 1);
       for (const element of step.revealFirst ?? []) start.add(element);
       this.#applyLit(start, []);
-      this.#drawLine(step, () => this.#applyLit(after, step.focus));
+      this.#drawFlow(step, () => this.#applyLit(after, step.focus));
     } else {
-      this.#clearCanvas();
       this.#applyLit(after, step.focus);
     }
 
     const last = this.#plan.steps.length - 1;
-    this.#caption.textContent = step.caption;
-    this.#counter.textContent =
-      index === last ? "完成" : `第 ${index + 1} / ${last} 步`;
+    this.#badge.hidden = index === last;
+    this.#badge.textContent = String(index + 1);
+    this.#text.textContent = step.caption;
+    this.#setProgress(index);
     this.#first.disabled = false;
     this.#prev.disabled = false;
     this.#next.disabled = index === last;
@@ -259,86 +290,140 @@ class DiagramAnimator {
     }, this.#stepDuration(step));
   }
 
-  // --- canvas --------------------------------------------------------------
+  // --- flow ----------------------------------------------------------------
 
   #travelTime(): number {
     return (MOTION.slow + 160) / this.#speed;
   }
 
-  #fitCanvas(): void {
-    const preBox = this.#pre.getBoundingClientRect();
-    const box = this.#svg.getBoundingClientRect();
-    const ratio = window.devicePixelRatio || 1;
-    this.#canvas.style.left = `${box.left - preBox.left}px`;
-    this.#canvas.style.top = `${box.top - preBox.top}px`;
-    this.#canvas.style.width = `${box.width}px`;
-    this.#canvas.style.height = `${box.height}px`;
-    const width = Math.round(box.width * ratio);
-    const height = Math.round(box.height * ratio);
-    if (this.#canvas.width !== width) this.#canvas.width = width;
-    if (this.#canvas.height !== height) this.#canvas.height = height;
-    this.#canvas.getContext("2d")?.setTransform(ratio, 0, 0, ratio, 0, 0);
+  #cancelFlow(): void {
+    this.#flowToken += 1;
+    for (const cleanup of this.#cleanups) cleanup();
+    this.#cleanups = [];
   }
 
-  #clearCanvas(): void {
-    if (this.#frame !== undefined) cancelAnimationFrame(this.#frame);
-    this.#frame = undefined;
-    const context = this.#canvas.getContext("2d");
-    context?.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
-  }
-
-  /** Draws the step's route as a growing line, then calls `done`. */
-  #drawLine(step: DiagramStep, done: () => void): void {
-    this.#clearCanvas();
-    this.#fitCanvas();
-    const context = this.#canvas.getContext("2d");
-    const position = step.motion ? route(step.motion) : undefined;
-    if (!context || !position) {
+  /** Flows dots (and the chip) along the step's route, then calls `done`. */
+  #drawFlow(step: DiagramStep, done: () => void): void {
+    const source = step.motion?.element;
+    const route = routeOf(step);
+    if (!source || !route) {
       done();
       return;
     }
-    const color = themeColor("--iris", "#c4a7e7");
+    // The layer sits next to the edge, so it shares the edge's coordinates.
+    const layer = svgEl("g", "anim-layer");
+    const transform = source.getAttribute("transform");
+    if (transform) layer.setAttribute("transform", transform);
+    const flow = svgEl("path", "anim-flow");
+    flow.setAttribute("d", route);
+    layer.append(flow);
+    source.after(layer);
+
     const travel = this.#travelTime();
-    const started = performance.now();
+    const token = this.#flowToken;
+    let fade: JSAnimation | undefined;
+    const timeline = createTimeline({
+      onComplete: () => {
+        if (token !== this.#flowToken) return;
+        done();
+        fade = animate(layer, {
+          opacity: 0,
+          duration: MOTION.fast,
+          ease: "out(2)",
+          onComplete: () => layer.remove(),
+        });
+        this.#pop(step.pulse);
+      },
+    });
+    this.#cleanups.push(() => {
+      timeline.cancel();
+      fade?.cancel();
+      layer.remove();
+    });
 
-    const local = (point: Point): Point => {
-      const box = this.#canvas.getBoundingClientRect();
-      return { x: point.x - box.left, y: point.y - box.top };
-    };
+    timeline.add(
+      flow,
+      { opacity: [0, 1], duration: MOTION.fast, ease: "out(2)" },
+      0,
+    );
+    timeline.add(
+      flow,
+      { strokeDashoffset: [0, -42], duration: travel, ease: "linear" },
+      0,
+    );
+    if (step.chip) {
+      const chip = this.#chip(step.chip);
+      layer.append(chip);
+      const path = animeSvg.createMotionPath(flow);
+      timeline.add(
+        chip,
+        {
+          translateX: path.translateX,
+          translateY: path.translateY,
+          duration: travel,
+          ease: "inOut(3)",
+        },
+        0,
+      );
+      timeline.add(chip, { opacity: [0, 1], duration: 140, ease: "out(2)" }, 0);
+      timeline.add(
+        chip,
+        { opacity: [1, 0], duration: 180, ease: "in(2)" },
+        Math.max(0, travel - 100),
+      );
+    }
+  }
 
-    const draw = (now: number): void => {
-      const box = this.#canvas.getBoundingClientRect();
-      const progress = ease(Math.min(1, (now - started) / travel));
-      context.clearRect(0, 0, box.width, box.height);
-      const samples = Math.max(2, Math.ceil(48 * progress));
-      context.beginPath();
-      let tip: Point | undefined;
-      for (let index = 0; index <= samples; index += 1) {
-        const screen = position((progress * index) / samples);
-        if (!screen) continue;
-        tip = local(screen);
-        if (index === 0) context.moveTo(tip.x, tip.y);
-        else context.lineTo(tip.x, tip.y);
-      }
-      context.strokeStyle = color;
-      context.lineWidth = 2;
-      context.lineCap = "round";
-      context.lineJoin = "round";
-      context.stroke();
-      if (tip) {
-        context.beginPath();
-        context.fillStyle = color;
-        context.arc(tip.x, tip.y, 3.5, 0, Math.PI * 2);
-        context.fill();
-      }
-      if (progress < 1) {
-        this.#frame = requestAnimationFrame(draw);
-        return;
-      }
-      this.#frame = undefined;
-      done();
-      context.clearRect(0, 0, box.width, box.height);
-    };
-    this.#frame = requestAnimationFrame(draw);
+  /** A pill with the edge's text, centred on its own origin. */
+  #chip(text: string): SVGGElement {
+    const chip = svgEl("g", "anim-chip");
+    chip.style.opacity = "0";
+    const pill = svgEl("rect", "");
+    const label = svgEl("text", "");
+    label.textContent = text;
+    chip.append(pill, label);
+    // Measure inside the document so the text has a length.
+    this.#svg.append(chip);
+    const width = label.getComputedTextLength() + 16;
+    chip.remove();
+    pill.setAttribute("x", String(-width / 2));
+    pill.setAttribute("y", "-10");
+    pill.setAttribute("width", String(width));
+    pill.setAttribute("height", "20");
+    pill.setAttribute("rx", "10");
+    return chip;
+  }
+
+  /** A slight 0.96 → 1 scale on arrival, without disturbing its position. */
+  #pop(target: Element | undefined): void {
+    if (!target || reducedMotion()) return;
+    const base = target.getAttribute("transform");
+    if (base?.startsWith("translate")) {
+      // Mermaid positions nodes with this attribute; a CSS transform would
+      // replace it, so the scale is appended to the attribute instead.
+      const state = { scale: 0.96 };
+      const pop = animate(state, {
+        scale: 1,
+        duration: MOTION.base,
+        ease: "out(3)",
+        onUpdate: () =>
+          target.setAttribute("transform", `${base} scale(${state.scale})`),
+        onComplete: () => target.setAttribute("transform", base),
+      });
+      this.#cleanups.push(() => {
+        pop.cancel();
+        target.setAttribute("transform", base);
+      });
+      return;
+    }
+    if (base || !(target instanceof SVGGraphicsElement)) return;
+    target.style.transformBox = "fill-box";
+    target.style.transformOrigin = "center";
+    const pop = animate(target, {
+      scale: [0.96, 1],
+      duration: MOTION.base,
+      ease: "out(3)",
+    });
+    this.#cleanups.push(() => pop.revert());
   }
 }
