@@ -157,4 +157,66 @@ describe("prepareDiagram", () => {
       icons: new Map(),
     });
   });
+
+  test("keeps the original source when the appended statements fail to parse", async () => {
+    const parser: MermaidParser = {
+      mermaidAPI: {
+        getDiagramFromText: async (text) => {
+          if (text.includes("icoSlot")) throw new Error("Parse error");
+          return { type: "flowchart-v2", db: flowDb };
+        },
+      },
+    };
+    const source = "flowchart LR\n  cli --> d";
+    expect(await prepareDiagram(parser, source)).toEqual({
+      source,
+      kind: "flowchart",
+      icons: new Map(),
+    });
+  });
+
+  test("sequence diagrams get icons without changing the source", async () => {
+    const db = {
+      getActors: () =>
+        new Map([
+          ["U", { name: "U", description: "使用者", type: "actor" }],
+          ["C", { name: "C", description: "CLI", type: "participant" }],
+        ]),
+    };
+    const source = "sequenceDiagram\n  actor U as 使用者\n  U->>C: done 1";
+    const prepared = await prepareDiagram(parserFor("sequence", db), source);
+    expect(prepared.kind).toBe("sequence");
+    expect(prepared.source).toBe(source);
+    expect([...prepared.icons]).toEqual([
+      ["U", "user"],
+      ["C", "terminal"],
+    ]);
+  });
+
+  test("class diagrams reserve room with cssClass", async () => {
+    const db = {
+      getClasses: () =>
+        new Map([
+          [
+            "TodoRepository",
+            { id: "TodoRepository", annotations: ["interface"] },
+          ],
+          ["Todo", { id: "Todo", annotations: [] }],
+        ]),
+      getRelations: () => [],
+    };
+    const source = "classDiagram\n  class Todo";
+    const prepared = await prepareDiagram(
+      parserFor("classDiagram", db),
+      source,
+    );
+    expect(prepared.kind).toBe("class");
+    expect(prepared.source).toBe(
+      `${source}\n  cssClass "TodoRepository,Todo" icoSlot`,
+    );
+    expect([...prepared.icons]).toEqual([
+      ["TodoRepository", "contract"],
+      ["Todo", "cube"],
+    ]);
+  });
 });

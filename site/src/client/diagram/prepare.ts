@@ -225,11 +225,17 @@ export async function prepareDiagram(
     }
     // Sequence participants keep their size; their icon sits above the text.
     const slotted = kind === "sequence" ? [] : [...icons.keys()];
-    return {
-      source: augmentSource(source, kind, slotted, shapes),
-      kind,
-      icons,
-    };
+    const augmented = augmentSource(source, kind, slotted, shapes);
+    if (augmented !== source) {
+      try {
+        await mermaid.mermaidAPI.getDiagramFromText(augmented);
+      } catch {
+        // Our appended statements must never be what breaks a diagram:
+        // draw it as written, without icons (their room was never made).
+        return { source, kind, icons: new Map() };
+      }
+    }
+    return { source: augmented, kind, icons };
   } catch {
     // An unknown syntax or a Mermaid change must not break the diagram.
     return { source, kind: undefined, icons: new Map() };

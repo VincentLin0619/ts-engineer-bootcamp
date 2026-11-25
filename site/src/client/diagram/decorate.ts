@@ -127,16 +127,23 @@ function decorateBoxes(
 /** Icon above the participant's name; skipped when the box is too low. */
 function decorateParticipantBox(group: Element, name: IconName): void {
   const rect = group.querySelector<SVGRectElement>("rect.actor");
-  const text = group.querySelector<SVGTextElement>("text");
-  if (!rect || !text) return;
-  const height = rect.height.baseVal.value;
-  if (height - text.getBBox().height < 44) return;
+  // Mermaid draws one <text> per line of a multi-line name.
+  const lines = Array.from(group.querySelectorAll<SVGTextElement>("text"));
+  if (!rect || lines.length === 0) return;
+  let top = Number.POSITIVE_INFINITY;
+  let bottom = Number.NEGATIVE_INFINITY;
+  for (const line of lines) {
+    const box = line.getBBox();
+    top = Math.min(top, box.y);
+    bottom = Math.max(bottom, box.y + box.height);
+  }
+  if (rect.height.baseVal.value - (bottom - top) < 44) return;
   const glyph = 18;
   const x = rect.x.baseVal.value + (rect.width.baseVal.value - glyph) / 2;
   group.append(
     iconGroup(name, { x, y: rect.y.baseVal.value + 8, size: glyph }, glyph),
   );
-  text.setAttribute("transform", "translate(0 10)");
+  for (const line of lines) line.setAttribute("transform", "translate(0 10)");
   mark(group, name);
 }
 
