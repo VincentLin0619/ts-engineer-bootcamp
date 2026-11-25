@@ -19,5 +19,8 @@
   },
   "peerDependencies": {
     "typescript": "^7"
+  },
+  "dependencies": {
+    "animejs": "^4.5.0"
   }
 }
