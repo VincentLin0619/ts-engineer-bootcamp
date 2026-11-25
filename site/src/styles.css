@@ -1033,6 +1033,33 @@ pre.mermaid
   ry: 12px;
 }
 
+/* Card typography: the first line is the name, later lines describe it.
+   Like the slot padding, these apply while Mermaid measures the label. */
+pre.mermaid
+  svg:is(
+    [aria-roledescription^="flowchart"],
+    [aria-roledescription="stateDiagram"]
+  )
+  g.node
+  foreignObject
+  p {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+pre.mermaid
+  svg:is(
+    [aria-roledescription^="flowchart"],
+    [aria-roledescription="stateDiagram"]
+  )
+  g.node
+  foreignObject
+  p::first-line {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
 pre.mermaid .cat-actor {
   --tint: var(--foam);
 }
