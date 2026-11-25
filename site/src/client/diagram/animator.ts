@@ -329,6 +329,9 @@ class DiagramAnimator {
     // The layer is the SVG's last child so the chip paints above labels and
     // nodes; a matrix maps it into the edge's own coordinates.
     const layer = svgEl("g", "anim-layer");
+    // The caption already says what the chip shows; keep it out of the
+    // accessibility tree.
+    layer.setAttribute("aria-hidden", "true");
     this.#svg.append(layer);
     const toEdge = layer
       .getCTM()

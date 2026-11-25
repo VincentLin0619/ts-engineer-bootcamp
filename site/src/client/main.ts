@@ -133,29 +133,44 @@ async function renderDiagrams(): Promise<void> {
   if (nodes.length === 0) return;
   // The SVGs below are about to be replaced; stop their playback first.
   detachDiagramAnimators();
+  let mermaid: MermaidApi;
   try {
-    const mermaid = await loadMermaid();
+    mermaid = await loadMermaid();
     // Initialise first: the parser used by prepareDiagram reads the config.
     mermaid.initialize(mermaidTheme());
-    const prepared = new Map<HTMLElement, Prepared>();
-    for (const node of nodes) {
-      node.removeAttribute("data-processed");
-      const ready = await prepareDiagram(
-        mermaid,
-        node.dataset.src ?? node.textContent ?? "",
-      );
-      prepared.set(node, ready);
-      node.textContent = ready.source;
-    }
-    await mermaid.run({ nodes });
-    ensureIconSprite(document);
-    for (const [node, ready] of prepared) {
-      const svg = node.querySelector("svg");
-      if (svg && ready.kind) decorateDiagram(svg, ready.kind, ready.icons);
-    }
-    attachDiagramAnimators();
   } catch {
+    // Mermaid itself did not load: every diagram stays as its source.
     for (const node of nodes) node.classList.add("mermaid-failed");
+    return;
+  }
+  ensureIconSprite(document);
+  // One diagram at a time, so a broken one cannot take the others down.
+  for (const node of nodes) {
+    const source = node.dataset.src ?? node.textContent ?? "";
+    node.classList.remove("mermaid-failed");
+    node.removeAttribute("data-processed");
+    try {
+      const ready = await prepareDiagram(mermaid, source);
+      node.textContent = ready.source;
+      await mermaid.run({ nodes: [node] });
+      const svg = node.querySelector("svg");
+      if (svg) decorate(svg, ready);
+    } catch {
+      // Show the source as written, not Mermaid's error picture.
+      node.textContent = source;
+      node.classList.add("mermaid-failed");
+    }
+  }
+  attachDiagramAnimators();
+}
+
+/** Icons are decoration: if adding them fails, the plain diagram stays. */
+function decorate(svg: SVGSVGElement, ready: Prepared): void {
+  if (!ready.kind) return;
+  try {
+    decorateDiagram(svg, ready.kind, ready.icons);
+  } catch {
+    // Keep the diagram Mermaid drew.
   }
 }
 

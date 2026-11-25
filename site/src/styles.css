@@ -883,8 +883,10 @@ svg {
   height: 22px;
   margin-right: 0.5rem;
   border-radius: 50%;
-  background: var(--gold);
-  color: var(--surface);
+  /* A gold tint with body text keeps 4.5:1 in both themes; solid gold
+     behind light text did not (2.2:1 in light mode). */
+  background: color-mix(in srgb, var(--gold) 30%, var(--surface));
+  color: var(--text);
   font-size: 12px;
   font-weight: 700;
   vertical-align: 1px;
