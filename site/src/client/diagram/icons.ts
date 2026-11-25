@@ -98,6 +98,9 @@ const KEYWORDS: [IconName, RegExp][] = [
   ["file", /[\w-]+\.(json|ts|js|md|txt|csv|html)\b/i],
 ];
 
+const CONTRACT = /interface|介面|合約|契約/i;
+const IMPLEMENTATION = /實作|implementation/i;
+
 function matchKeyword(line: string): IconName | undefined {
   return KEYWORDS.find(([, pattern]) => pattern.test(line))?.[0];
 }
@@ -116,17 +119,19 @@ export function pickIcon(
   const override = overrides.get(node.id);
   if (override !== undefined) return override === "none" ? undefined : override;
   if (node.isActor) return "user";
+  // A declared `implements` says more than any word in the name.
+  if (node.implementsRole === "source") return "cube";
+  if (node.implementsRole === "target") return "contract";
   const [first = "", ...rest] = node.lines;
   const byName = matchKeyword(first);
   if (byName) return byName;
-  if (node.implementsRole === "source") return "cube";
-  if (node.implementsRole === "target") return "contract";
   if (node.kind === "class" && node.stereotype === "interface") {
     return "contract";
   }
-  for (const line of rest) {
-    const byDetail = matchKeyword(line);
-    if (byDetail) return byDetail;
+  // Detail lines describe rather than name, so they only mark interfaces;
+  // "合約的實作" (an implementation of a contract) is not one.
+  if (rest.some((line) => CONTRACT.test(line) && !IMPLEMENTATION.test(line))) {
+    return "contract";
   }
   return node.kind === "class" ? "cube" : undefined;
 }

@@ -64,6 +64,8 @@ class VipMember extends Member {
 
 ```mermaid
 flowchart TB
+  %% icon: r contract
+  %% icon: p cube
   subgraph comp["組合：Service 有一個 Repository"]
     direction TB
     s["ComposedTodoService<br/>對外只有 add()"] -->|"持有（私有欄位）"| r["TodoRepository<br/>任何一個實作都可以"]
