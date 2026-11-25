@@ -8,6 +8,7 @@ import {
   animate,
   svg as animeSvg,
   createTimeline,
+  cubicBezier,
   type JSAnimation,
 } from "animejs";
 import {
@@ -23,8 +24,23 @@ import { type DiagramPlan, type DiagramStep, planDiagram } from "./steps.ts";
 const SVG_NS = "http://www.w3.org/2000/svg";
 /** Diagrams with more steps than this show a progress line instead of dots. */
 const MAX_DOTS = 12;
+// The site's two curves, MOTION.enter and MOTION.move in ui.ts, as animejs
+// eases (animejs v4 does not parse CSS `cubic-bezier()` strings).
+const ENTER = cubicBezier(0.2, 0.7, 0.2, 1);
+const MOVE = cubicBezier(0.65, 0, 0.35, 1);
 
 const instances = new WeakMap<HTMLElement, DiagramAnimator>();
+
+/**
+ * Stops every animator before its diagram is re-rendered, so none keeps
+ * writing to an SVG that Mermaid is about to replace.
+ */
+export function detachDiagramAnimators(root: ParentNode = document): void {
+  for (const pre of root.querySelectorAll<HTMLElement>("pre.mermaid")) {
+    instances.get(pre)?.destroy();
+    instances.delete(pre);
+  }
+}
 
 /** (Re)attaches an animator to every rendered Mermaid diagram. */
 export function attachDiagramAnimators(root: ParentNode = document): void {
@@ -310,14 +326,22 @@ class DiagramAnimator {
       done();
       return;
     }
-    // The layer sits next to the edge, so it shares the edge's coordinates.
+    // The layer is the SVG's last child so the chip paints above labels and
+    // nodes; a matrix maps it into the edge's own coordinates.
     const layer = svgEl("g", "anim-layer");
-    const transform = source.getAttribute("transform");
-    if (transform) layer.setAttribute("transform", transform);
+    this.#svg.append(layer);
+    const toEdge = layer
+      .getCTM()
+      ?.inverse()
+      .multiply(source.getCTM() ?? new DOMMatrix());
+    if (toEdge) {
+      layer.transform.baseVal.initialize(
+        this.#svg.createSVGTransformFromMatrix(toEdge),
+      );
+    }
     const flow = svgEl("path", "anim-flow");
     flow.setAttribute("d", route);
     layer.append(flow);
-    source.after(layer);
 
     const travel = this.#travelTime();
     const token = this.#flowToken;
@@ -329,7 +353,7 @@ class DiagramAnimator {
         fade = animate(layer, {
           opacity: 0,
           duration: MOTION.fast,
-          ease: "out(2)",
+          ease: ENTER,
           onComplete: () => layer.remove(),
         });
         this.#pop(step.pulse);
@@ -343,9 +367,10 @@ class DiagramAnimator {
 
     timeline.add(
       flow,
-      { opacity: [0, 1], duration: MOTION.fast, ease: "out(2)" },
+      { opacity: [0, 1], duration: MOTION.fast, ease: ENTER },
       0,
     );
+    // The dots march at a constant pace; an eased march would stutter.
     timeline.add(
       flow,
       { strokeDashoffset: [0, -42], duration: travel, ease: "linear" },
@@ -361,15 +386,19 @@ class DiagramAnimator {
           translateX: path.translateX,
           translateY: path.translateY,
           duration: travel,
-          ease: "inOut(3)",
+          ease: MOVE,
         },
         0,
       );
-      timeline.add(chip, { opacity: [0, 1], duration: 140, ease: "out(2)" }, 0);
       timeline.add(
         chip,
-        { opacity: [1, 0], duration: 180, ease: "in(2)" },
-        Math.max(0, travel - 100),
+        { opacity: [0, 1], duration: MOTION.fast, ease: ENTER },
+        0,
+      );
+      timeline.add(
+        chip,
+        { opacity: [1, 0], duration: MOTION.fast, ease: ENTER },
+        Math.max(0, travel - MOTION.fast),
       );
     }
   }
@@ -405,7 +434,7 @@ class DiagramAnimator {
       const pop = animate(state, {
         scale: 1,
         duration: MOTION.base,
-        ease: "out(3)",
+        ease: ENTER,
         onUpdate: () =>
           target.setAttribute("transform", `${base} scale(${state.scale})`),
         onComplete: () => target.setAttribute("transform", base),
@@ -422,7 +451,7 @@ class DiagramAnimator {
     const pop = animate(target, {
       scale: [0.96, 1],
       duration: MOTION.base,
-      ease: "out(3)",
+      ease: ENTER,
     });
     this.#cleanups.push(() => pop.revert());
   }

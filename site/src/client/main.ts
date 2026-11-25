@@ -1,7 +1,10 @@
 // Browser entry point: theme switch, Mermaid diagrams, self-check lists,
 // course progress and the animation players.
 
-import { attachDiagramAnimators } from "./diagram/animator.ts";
+import {
+  attachDiagramAnimators,
+  detachDiagramAnimators,
+} from "./diagram/animator.ts";
 import { decorateDiagram, ensureIconSprite } from "./diagram/decorate.ts";
 import {
   type MermaidParser,
@@ -128,6 +131,8 @@ async function renderDiagrams(): Promise<void> {
     document.querySelectorAll<HTMLElement>("pre.mermaid"),
   );
   if (nodes.length === 0) return;
+  // The SVGs below are about to be replaced; stop their playback first.
+  detachDiagramAnimators();
   try {
     const mermaid = await loadMermaid();
     // Initialise first: the parser used by prepareDiagram reads the config.
