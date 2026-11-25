@@ -930,6 +930,84 @@ pre.mermaid svg text.messageText.anim-focus {
   text-align: center;
 }
 
+/* Icon cards. `.icoSlot` is added before rendering (prepare.ts) so Mermaid
+   measures the padding and makes room for the icon tile. */
+/* Mermaid only switches a label to wrapping when the div measures exactly
+   its 120px wrapping width, which the padding prevents. So the slot wraps
+   on its own: text up to 120px wide, longer words widen the node. */
+pre.mermaid g.node.icoSlot > g.label foreignObject > div {
+  display: inline-grid !important;
+  grid-template-columns: fit-content(120px);
+  vertical-align: top;
+  max-width: none !important;
+  white-space: normal !important;
+  padding-left: 46px !important;
+  box-sizing: content-box !important;
+  text-align: left !important;
+}
+
+pre.mermaid g.node.icoSlot g.label-group foreignObject > div {
+  padding-left: 32px !important;
+  box-sizing: content-box !important;
+}
+
+pre.mermaid
+  svg:is(
+    [aria-roledescription^="flowchart"],
+    [aria-roledescription="stateDiagram"]
+  )
+  g.node
+  > rect.label-container {
+  rx: 12px;
+  ry: 12px;
+}
+
+pre.mermaid .cat-actor {
+  --tint: var(--foam);
+}
+
+pre.mermaid .cat-flow {
+  --tint: var(--pine);
+}
+
+pre.mermaid .cat-code {
+  --tint: var(--iris);
+}
+
+pre.mermaid .cat-store {
+  --tint: var(--gold);
+}
+
+pre.mermaid .cat-error {
+  --tint: var(--love);
+}
+
+pre.mermaid .dicon-tile {
+  fill: color-mix(in srgb, var(--tint) 14%, transparent);
+  stroke: none;
+}
+
+pre.mermaid .dicon-glyph {
+  fill: none;
+  stroke: var(--tint);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+pre.mermaid .dicon-hidden {
+  display: none;
+}
+
+/* Non-rect shapes keep their outline as the signifier, in category colour. */
+pre.mermaid g.node.shapeBranch > polygon {
+  stroke: var(--pine) !important;
+}
+
+pre.mermaid g.node.shapeStore > path {
+  stroke: var(--gold) !important;
+}
+
 .mermaid-failed::before {
   content: "圖解載入失敗，下面是圖的原始碼：";
   display: block;
